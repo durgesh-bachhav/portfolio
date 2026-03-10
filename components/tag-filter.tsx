@@ -19,6 +19,7 @@ interface TagFilterProps {
 export function TagFilter({ tags, selectedTag, tagCounts }: TagFilterProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const safeTags = Array.isArray(tags) ? tags : [];
 
   const handleTagClick = (tag: string) => {
     const params = new URLSearchParams();
@@ -30,7 +31,7 @@ export function TagFilter({ tags, selectedTag, tagCounts }: TagFilterProps) {
 
   const DesktopTagFilter = () => (
     <div className="hidden md:flex flex-wrap gap-2">
-      {tags.map((tag) => (
+      {safeTags.map((tag) => (
         <button
           key={tag}
           onClick={() => handleTagClick(tag)}
@@ -71,7 +72,7 @@ export function TagFilter({ tags, selectedTag, tagCounts }: TagFilterProps) {
 
         <DrawerBody>
           <div className="space-y-2">
-            {tags.map((tag) => (
+            {safeTags.map((tag) => (
               <button
                 key={tag}
                 onClick={() => handleTagClick(tag)}

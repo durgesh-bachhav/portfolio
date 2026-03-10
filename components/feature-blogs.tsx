@@ -23,9 +23,10 @@ interface BlogPage {
     data: BlogData;
 }
 
+const mdxSource = createMDXSource(docs, meta);
 const blogSource = loader({
     baseUrl: "/blog",
-    source: createMDXSource(docs, meta),
+    source: { files: mdxSource.files() },
 });
 
 const formatDate = (date: Date): string => {
@@ -37,7 +38,14 @@ const formatDate = (date: Date): string => {
 };
 
 export async function FeaturedBlogs() {
-    const allPages = blogSource.getPages() as BlogPage[];
+    const rawPages = blogSource.getPages() as unknown;
+    const allPages = Array.isArray(rawPages)
+        ? (rawPages as BlogPage[])
+        : rawPages instanceof Map
+            ? (Array.from(rawPages.values()) as BlogPage[])
+            : rawPages && typeof (rawPages as { [Symbol.iterator]?: unknown })[Symbol.iterator] === "function"
+                ? (Array.from(rawPages as Iterable<BlogPage>) as BlogPage[])
+                : [];
 
     // Sort by date (newest first)
     const sortedBlogs = allPages.sort((a, b) => {
@@ -52,7 +60,9 @@ export async function FeaturedBlogs() {
         .slice(0, 4);
 
     // If no featured blogs, show top 4 latest
-    const displayBlogs = featuredBlogs.length > 0 ? featuredBlogs : sortedBlogs.slice(0, 4);
+    const displayBlogs =
+        featuredBlogs.length > 0 ? featuredBlogs : sortedBlogs.slice(0, 4);
+    const safeDisplayBlogs = Array.isArray(displayBlogs) ? displayBlogs : [];
 
     return (
         <section className="py-4 md:py-6 lg:py-8 px-6 lg:px-0">
@@ -73,10 +83,10 @@ export async function FeaturedBlogs() {
                 <div className="max-w-4xl mx-auto w-full px-6 lg:px-0">
                     <Suspense fallback={<div>Loading articles...</div>}>
                         <div
-                            className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 relative overflow-hidden border-x border-border ${displayBlogs.length < 4 ? "border-b" : "border-b-0"
+                            className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 relative overflow-hidden border-x border-border ${safeDisplayBlogs.length < 4 ? "border-b" : "border-b-0"
                                 }`}
                         >
-                            {displayBlogs.map((blog) => {
+                            {safeDisplayBlogs.map((blog) => {
                                 const date = new Date(blog.data.date);
                                 const formattedDate = formatDate(date);
 
@@ -88,7 +98,7 @@ export async function FeaturedBlogs() {
                                         description={blog.data.description}
                                         date={formattedDate}
                                         thumbnail={blog.data.thumbnail}
-                                        showRightBorder={displayBlogs.length < 3}
+                                        showRightBorder={safeDisplayBlogs.length < 3}
                                     />
                                 );
                             })}

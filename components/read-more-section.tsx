@@ -4,9 +4,10 @@ import { loader } from "fumadocs-core/source";
 import { createMDXSource } from "fumadocs-mdx";
 import Link from "next/link";
 
+const mdxSource = createMDXSource(docs, meta);
 const blogSource = loader({
   baseUrl: "/blog",
-  source: createMDXSource(docs, meta),
+  source: { files: mdxSource.files() },
 });
 
 const formatDate = (date: Date): string => {

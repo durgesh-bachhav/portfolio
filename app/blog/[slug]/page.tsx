@@ -21,9 +21,10 @@ interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+const mdxSource = createMDXSource(docs, meta);
 const blogSource = loader({
   baseUrl: "/blog",
-  source: createMDXSource(docs, meta),
+  source: { files: mdxSource.files() },
 });
 
 const formatDate = (date: Date): string => {

@@ -23,9 +23,10 @@ interface BlogPage {
     data: BlogData;
 }
 
+const mdxSource = createMDXSource(docs, meta);
 const blogSource = loader({
     baseUrl: "/blog",
-    source: createMDXSource(docs, meta),
+    source: { files: mdxSource.files() },
 });
 
 const formatDate = (date: Date): string => {
@@ -42,17 +43,35 @@ export default async function BlogPage({
     searchParams: Promise<{ tag?: string }>;
 }) {
     const resolvedSearchParams = await searchParams;
-    const allPages = blogSource.getPages() as BlogPage[];
-    const sortedBlogs = allPages.sort((a, b) => {
+    const rawPages = blogSource.getPages() as unknown;
+    const allPages = Array.isArray(rawPages)
+        ? (rawPages as BlogPage[])
+        : rawPages instanceof Map
+            ? (Array.from(rawPages.values()) as BlogPage[])
+            : rawPages && typeof (rawPages as { [Symbol.iterator]?: unknown })[Symbol.iterator] === "function"
+                ? (Array.from(rawPages as Iterable<BlogPage>) as BlogPage[])
+                : [];
+
+    const sortedBlogs = [...allPages].sort((a, b) => {
         const dateA = new Date(a.data.date).getTime();
         const dateB = new Date(b.data.date).getTime();
         return dateB - dateA;
     });
 
+    const normalizeTags = (tags: unknown): string[] => {
+        if (Array.isArray(tags)) {
+            return tags.filter((tag): tag is string => typeof tag === "string");
+        }
+        if (typeof tags === "string" && tags.length > 0) {
+            return [tags];
+        }
+        return [];
+    };
+
     const allTags = [
         "All",
         ...Array.from(
-            new Set(sortedBlogs.flatMap((blog) => blog.data.tags || []))
+            new Set(sortedBlogs.flatMap((blog) => normalizeTags(blog.data.tags)))
         ).sort(),
     ];
 
@@ -60,14 +79,21 @@ export default async function BlogPage({
     const filteredBlogs =
         selectedTag === "All"
             ? sortedBlogs
-            : sortedBlogs.filter((blog) => blog.data.tags?.includes(selectedTag));
+            : sortedBlogs.filter((blog) =>
+                normalizeTags(blog.data.tags).includes(selectedTag)
+            );
+
+    const safeFilteredBlogs = Array.isArray(filteredBlogs)
+        ? filteredBlogs
+        : [];
+    const safeAllTags = Array.isArray(allTags) ? allTags : ["All"];
 
     const tagCounts = allTags.reduce((acc, tag) => {
         if (tag === "All") {
             acc[tag] = sortedBlogs.length;
         } else {
             acc[tag] = sortedBlogs.filter((blog) =>
-                blog.data.tags?.includes(tag)
+                normalizeTags(blog.data.tags).includes(tag)
             ).length;
         }
         return acc;
@@ -96,10 +122,10 @@ export default async function BlogPage({
                         </p>
                     </div>
                 </div>
-                {allTags.length > 0 && (
+                {safeAllTags.length > 0 && (
                     <div className="max-w-4xl mx-auto w-full">
                         <TagFilter
-                            tags={allTags}
+                            tags={safeAllTags}
                             selectedTag={selectedTag}
                             tagCounts={tagCounts}
                         />
@@ -110,10 +136,10 @@ export default async function BlogPage({
             <div className="max-w-4xl mx-auto w-full px-6 lg:px-0">
                 <Suspense fallback={<div>Loading articles...</div>}>
                     <div
-                        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 relative overflow-hidden border-x border-border ${filteredBlogs.length < 4 ? "border-b" : "border-b-0"
+                        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 relative overflow-hidden border-x border-border ${safeFilteredBlogs.length < 4 ? "border-b" : "border-b-0"
                             }`}
                     >
-                        {filteredBlogs.map((blog) => {
+                        {safeFilteredBlogs.map((blog) => {
                             const date = new Date(blog.data.date);
                             const formattedDate = formatDate(date);
 
@@ -125,7 +151,7 @@ export default async function BlogPage({
                                     description={blog.data.description}
                                     date={formattedDate}
                                     thumbnail={blog.data.thumbnail}
-                                    showRightBorder={filteredBlogs.length < 3}
+                                    showRightBorder={safeFilteredBlogs.length < 3}
                                 />
                             );
                         })}

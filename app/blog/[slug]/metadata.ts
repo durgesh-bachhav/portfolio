@@ -4,9 +4,10 @@ import { loader } from "fumadocs-core/source";
 import { createMDXSource } from "fumadocs-mdx";
 import { siteConfig } from "@/lib/site";
 
+const mdxSource = createMDXSource(docs, meta);
 const blogSource = loader({
   baseUrl: "/blog",
-  source: createMDXSource(docs, meta),
+  source: { files: mdxSource.files() },
 });
 
 export async function generateMetadata({
@@ -35,13 +36,18 @@ export async function generateMetadata({
 
     const ogUrl = `${siteConfig.url}/blog/${slug}`;
     const ogImage = `${ogUrl}/opengraph-image`;
+    const tags = Array.isArray(page.data.tags)
+      ? page.data.tags
+      : page.data.tags
+        ? [page.data.tags]
+        : [];
 
     return {
       title: page.data.title,
       description: page.data.description,
       keywords: [
         page.data.title,
-        ...(page.data.tags || []),
+        ...tags,
         "Blog",
         "Article",
         "Web Development",
@@ -75,7 +81,7 @@ export async function generateMetadata({
         url: ogUrl,
         publishedTime: page.data.date,
         authors: [page.data.author || "Durgesh Bachhav"],
-        tags: page.data.tags,
+        tags,
         images: [
           {
             url: page.data.thumbnail || ogImage,
