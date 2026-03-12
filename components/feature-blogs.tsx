@@ -4,6 +4,8 @@ import { docs, meta } from "@/.source";
 import { loader } from "fumadocs-core/source";
 import { createMDXSource } from "fumadocs-mdx";
 import { BlogCard } from "@/components/blog-card";
+import { ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 import { Suspense } from "react";
 
 interface BlogData {
@@ -65,47 +67,45 @@ export async function FeaturedBlogs() {
     const safeDisplayBlogs = Array.isArray(displayBlogs) ? displayBlogs : [];
 
     return (
-        <section className="py-4 md:py-6 lg:py-8 px-6 lg:px-0">
-            <div className="max-w-4xl mx-auto">
-                {/* Section Header */}
-                <div className="mb-12 flex flex-col gap-4">
-                    <div className="flex flex-col gap-2">
-                        <h2 className="text-3xl md:text-4xl lg:text-5xl font-semibold tracking-tight text-center">
-                            Featured Articles
-                        </h2>
-                        <p className="text-muted-foreground text-sm md:text-base lg:text-lg max-w-2xl text-center">
-                            Explore in-depth guides, tutorials, and insights about web development, Next.js, and modern technologies.
-                        </p>
-                    </div>
+        <div className="space-y-8">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+                <div className="space-y-2">
+                    <h2 className="text-3xl font-bold font-mono">Featured Articles</h2>
+                    <p className="text-sm text-[#6f5f4d] dark:text-[#b7a48f] max-w-2xl">
+                        Practical notes on engineering systems, product work, and modern
+                        web development.
+                    </p>
                 </div>
-
-                {/* Blog Grid */}
-                <div className="max-w-4xl mx-auto w-full px-6 lg:px-0">
-                    <Suspense fallback={<div>Loading articles...</div>}>
-                        <div
-                            className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 relative overflow-hidden border-x border-border ${safeDisplayBlogs.length < 4 ? "border-b" : "border-b-0"
-                                }`}
-                        >
-                            {safeDisplayBlogs.map((blog) => {
-                                const date = new Date(blog.data.date);
-                                const formattedDate = formatDate(date);
-
-                                return (
-                                    <BlogCard
-                                        key={blog.url}
-                                        url={blog.url}
-                                        title={blog.data.title}
-                                        description={blog.data.description}
-                                        date={formattedDate}
-                                        thumbnail={blog.data.thumbnail}
-                                        showRightBorder={safeDisplayBlogs.length < 3}
-                                    />
-                                );
-                            })}
-                        </div>
-                    </Suspense>
-                </div>
+                <Link
+                    href="/blog"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-orange-600 dark:text-orange-400"
+                >
+                    View all articles
+                    <ArrowUpRight className="h-4 w-4" />
+                </Link>
             </div>
-        </section>
+
+            <div className="w-full">
+                <Suspense fallback={<div className="text-sm text-[#6f5f4d] dark:text-[#b7a48f]">Loading articles...</div>}>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        {safeDisplayBlogs.map((blog) => {
+                            const date = new Date(blog.data.date);
+                            const formattedDate = formatDate(date);
+
+                            return (
+                                <BlogCard
+                                    key={blog.url}
+                                    url={blog.url}
+                                    title={blog.data.title}
+                                    description={blog.data.description}
+                                    date={formattedDate}
+                                    thumbnail={blog.data.thumbnail}
+                                />
+                            );
+                        })}
+                    </div>
+                </Suspense>
+            </div>
+        </div>
     );
 }

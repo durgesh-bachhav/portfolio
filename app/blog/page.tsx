@@ -5,6 +5,7 @@ import { Suspense } from "react";
 import { BlogCard } from "@/components/blog-card";
 import { TagFilter } from "@/components/tag-filter";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
+import GridSection from "@/components/grid-section";
 
 interface BlogData {
     title: string;
@@ -100,63 +101,60 @@ export default async function BlogPage({
     }, {} as Record<string, number>);
 
     return (
-        <div className="min-h-screen bg-background relative">
+        <div className="min-h-screen bg-[#f8f2e8] dark:bg-[#1c1a16] text-[#2b241d] dark:text-[#efe6d9] relative">
             <div className="absolute top-0 left-0 z-0 w-full h-[200px] [mask-image:linear-gradient(to_top,transparent_25%,black_95%)]">
                 <FlickeringGrid
                     className="absolute top-0 left-0 size-full"
                     squareSize={4}
                     gridGap={6}
-                    color="#6B7280"
+                    color="#b9a892"
                     maxOpacity={0.2}
                     flickerChance={0.05}
                 />
             </div>
-            <div className="p-6 border-b border-border flex flex-col gap-6 min-h-[250px] justify-center relative z-10">
-                <div className="max-w-4xl mx-auto w-full">
-                    <div className="flex flex-col gap-2">
-                        <h1 className="font-medium text-4xl md:text-5xl tracking-tighter">
-                            Blog
-                        </h1>
-                        <p className="text-muted-foreground text-sm md:text-base lg:text-lg">
-                            Latest news and updates from Durgesh Bachhav.
-                        </p>
-                    </div>
-                </div>
-                {safeAllTags.length > 0 && (
-                    <div className="max-w-4xl mx-auto w-full">
-                        <TagFilter
-                            tags={safeAllTags}
-                            selectedTag={selectedTag}
-                            tagCounts={tagCounts}
-                        />
-                    </div>
-                )}
-            </div>
-
-            <div className="max-w-4xl mx-auto w-full px-6 lg:px-0">
-                <Suspense fallback={<div>Loading articles...</div>}>
-                    <div
-                        className={`grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 relative overflow-hidden border-x border-border ${safeFilteredBlogs.length < 4 ? "border-b" : "border-b-0"
-                            }`}
-                    >
-                        {safeFilteredBlogs.map((blog) => {
-                            const date = new Date(blog.data.date);
-                            const formattedDate = formatDate(date);
-
-                            return (
-                                <BlogCard
-                                    key={blog.url}
-                                    url={blog.url}
-                                    title={blog.data.title}
-                                    description={blog.data.description}
-                                    date={formattedDate}
-                                    thumbnail={blog.data.thumbnail}
-                                    showRightBorder={safeFilteredBlogs.length < 3}
+            <div className="relative z-10">
+                <div className="max-w-5xl mx-auto px-4 border-x border-[#e2d6c5] dark:border-[#3a332a]">
+                    <section className="border-b border-[#e2d6c5] dark:border-[#3a332a]">
+                        <GridSection className="py-16 px-8 space-y-6">
+                            <div className="flex flex-col gap-2">
+                                <h1 className="font-bold text-4xl md:text-5xl tracking-tight font-mono">
+                                    Blog
+                                </h1>
+                                <p className="text-sm md:text-base text-[#6f5f4d] dark:text-[#b7a48f]">
+                                    Notes, guides, and technical write-ups.
+                                </p>
+                            </div>
+                            {safeAllTags.length > 0 && (
+                                <TagFilter
+                                    tags={safeAllTags}
+                                    selectedTag={selectedTag}
+                                    tagCounts={tagCounts}
                                 />
-                            );
-                        })}
-                    </div>
-                </Suspense>
+                            )}
+                        </GridSection>
+                    </section>
+                    <section className="py-12">
+                        <Suspense fallback={<div className="text-sm text-[#6f5f4d] dark:text-[#b7a48f]">Loading articles...</div>}>
+                            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                                {safeFilteredBlogs.map((blog) => {
+                                    const date = new Date(blog.data.date);
+                                    const formattedDate = formatDate(date);
+
+                                    return (
+                                        <BlogCard
+                                            key={blog.url}
+                                            url={blog.url}
+                                            title={blog.data.title}
+                                            description={blog.data.description}
+                                            date={formattedDate}
+                                            thumbnail={blog.data.thumbnail}
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </Suspense>
+                    </section>
+                </div>
             </div>
         </div>
     );

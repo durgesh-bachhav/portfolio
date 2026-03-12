@@ -160,7 +160,7 @@ export function TableOfContents({ className }: TableOfContentsProps) {
 
   return (
     <div className={cn("space-y-2", className)}>
-      <h4 className="text-sm font-semibold text-foreground mb-4">
+      <h4 className="text-sm font-semibold text-[#2b241d] dark:text-[#efe6d9] mb-4">
         On this page
       </h4>
       <nav>
@@ -170,9 +170,9 @@ export function TableOfContents({ className }: TableOfContentsProps) {
               <button
                 onClick={() => handleClick(heading.id)}
                 className={cn(
-                  "block w-full text-left text-sm transition-colors hover:text-foreground text-muted-foreground",
+                  "block w-full text-left text-sm transition-colors hover:text-[#2b241d] dark:hover:text-[#efe6d9] text-[#6f5f4d] dark:text-[#b7a48f]",
                   {
-                    "text-primary font-medium underline underline-offset-4":
+                    "text-orange-600 dark:text-orange-400 font-medium underline underline-offset-4":
                       activeId === heading.id,
                   }
                 )}

@@ -8,12 +8,7 @@ export const authors: Record<string, Author> = {
   durgesh: {
     name: "Durgesh Bachhav",
     position: "Software Engineer",
-    avatar: "/authors/durgesh.svg",
-  },
-  arghya: {
-    name: "Arghya Das",
-    position: "Design System Engineer",
-    avatar: "/authors/arghya.png",
+    avatar: "https://avatars.githubusercontent.com/u/117353561?v=4",
   },
 } as const;
 

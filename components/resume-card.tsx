@@ -44,9 +44,9 @@ export const ResumeCard = ({
       className="block cursor-pointer gap-0"
       onClick={handleClick}
     >
-      <Card className="flex flex-row border-none shadow-none py-2 gap-1">
+      <Card className="flex flex-row border-none shadow-none py-2 gap-1 bg-transparent">
         <div className="flex-none">
-          <Avatar className="border size-12 m-auto bg-muted-background dark:bg-foreground">
+          <Avatar className="border size-12 m-auto bg-[#f1e6d5] dark:bg-[#241f19] border-[#e2d6c5] dark:border-[#3a332a]">
             <AvatarImage
               src={logoUrl}
               alt={altText}
@@ -80,11 +80,15 @@ export const ResumeCard = ({
                   )}
                 />
               </h3>
-              <div className="text-xs sm:text-sm tabular-nums text-muted-foreground text-right">
+              <div className="text-xs sm:text-sm tabular-nums text-[#7a6a58] dark:text-[#b7a48f] text-right">
                 {period}
               </div>
             </div>
-            {subtitle && <div className="font-sans text-xs">{subtitle}</div>}
+            {subtitle && (
+              <div className="font-sans text-xs text-[#6f5f4d] dark:text-[#b7a48f]">
+                {subtitle}
+              </div>
+            )}
           </CardHeader>
           {description && (
             <motion.div
@@ -98,7 +102,7 @@ export const ResumeCard = ({
                 duration: 0.7,
                 ease: [0.16, 1, 0.3, 1],
               }}
-              className="mt-2 text-xs sm:text-sm"
+              className="mt-2 text-xs sm:text-sm text-[#6f5f4d] dark:text-[#b7a48f]"
             >
               {description}
             </motion.div>

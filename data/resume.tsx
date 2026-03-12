@@ -11,7 +11,7 @@ export const DATA = {
         "Full-stack software developer with 2+ years of experience building production-grade applications using MERN, Next.js, and Adonis.js.",
     summary:
         "Specialized in scalable API architecture, cloud infrastructure, blockchain integration, and automation pipelines. Proven expertise in developing fintech, Web3, and enterprise solutions with a focus on clean code, performance optimization, and reliable system design. Strong track record delivering end-to-end solutions from concept to deployment across multiple SaaS platforms and blockchain applications.",
-    avatarUrl: "./durgesh-svg.svg",
+    avatarUrl: "https://avatars.githubusercontent.com/u/117353561?v=4",
     skills: [
         "JavaScript (ES6+)",
         "TypeScript",
@@ -63,19 +63,18 @@ export const DATA = {
 
                 navbar: true,
             },
-            X: {
-                name: "X",
-                url: "https://x.com/bachhav36741",
-                icon: Icons.x,
-
-                navbar: true,
-            },
-            Youtube: {
-                name: "Youtube",
-                url: "https://www.youtube.com/@durgeshbachhav",
-                icon: Icons.youtube,
-                navbar: true,
-            },
+            // X: {
+            //     name: "X",
+            //     url: "https://x.com/bachhav36741",
+            //     icon: Icons.x,
+            //     navbar: true,
+            // },
+            // Youtube: {
+            //     name: "Youtube",
+            //     url: "https://www.youtube.com/@durgeshbachhav",
+            //     icon: Icons.youtube,
+            //     navbar: true,
+            // },
             email: {
                 name: "Send Email",
                 url: "#",

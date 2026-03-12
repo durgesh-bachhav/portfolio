@@ -35,19 +35,19 @@ export function TagFilter({ tags, selectedTag, tagCounts }: TagFilterProps) {
         <button
           key={tag}
           onClick={() => handleTagClick(tag)}
-          className={`h-8 flex items-center px-1 pl-3 rounded-lg cursor-pointer border text-sm transition-colors ${
+          className={`h-8 flex items-center px-1 pl-3 cursor-pointer border text-sm transition-colors ${
             selectedTag === tag
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-border hover:bg-muted"
+              ? "border-orange-600 bg-[#f1e6d5] text-orange-700 dark:bg-[#2a241d] dark:text-orange-400"
+              : "border-[#e2d6c5] text-[#6f5f4d] hover:bg-[#f1e6d5] dark:border-[#3a332a] dark:text-[#b7a48f] dark:hover:bg-[#2a241d]"
           }`}
         >
           <span>{tag}</span>
           {tagCounts?.[tag] && (
             <span
-              className={`ml-2 text-xs border rounded-md h-6 min-w-6 font-medium flex items-center justify-center ${
+              className={`ml-2 text-xs border h-6 min-w-6 font-medium flex items-center justify-center ${
                 selectedTag === tag
-                  ? "border-border/40 dark:border-primary-foreground bg-background text-primary"
-                  : "border-border dark:border-border"
+                  ? "border-[#e2d6c5] bg-[#f8f2e8] text-orange-700 dark:border-[#3a332a] dark:bg-[#1c1a16] dark:text-orange-400"
+                  : "border-[#e2d6c5] text-[#6f5f4d] dark:border-[#3a332a] dark:text-[#b7a48f]"
               }`}
             >
               {tagCounts[tag]}
@@ -60,10 +60,12 @@ export function TagFilter({ tags, selectedTag, tagCounts }: TagFilterProps) {
 
   const MobileTagFilter = () => (
     <Drawer>
-      <DrawerTrigger className="md:hidden w-full flex items-center justify-between px-4 py-2 border border-border rounded-lg hover:bg-muted transition-colors">
-        <span className="capitalize text-sm font-medium">{selectedTag}</span>
-        <ChevronDown className="h-4 w-4" />
-      </DrawerTrigger>
+    <DrawerTrigger className="md:hidden w-full flex items-center justify-between px-4 py-2 border border-[#e2d6c5] dark:border-[#3a332a] hover:bg-[#f1e6d5] dark:hover:bg-[#2a241d] transition-colors">
+      <span className="capitalize text-sm font-medium text-[#6f5f4d] dark:text-[#b7a48f]">
+        {selectedTag}
+      </span>
+      <ChevronDown className="h-4 w-4" />
+    </DrawerTrigger>
 
       <DrawerContent className="md:hidden">
         <DrawerHeader>
@@ -81,14 +83,14 @@ export function TagFilter({ tags, selectedTag, tagCounts }: TagFilterProps) {
                 <span
                   className={`w-full flex items-center justify-between font-medium cursor-pointer text-sm transition-colors ${
                     selectedTag === tag
-                      ? "underline underline-offset-4 text-primary"
-                      : "text-muted-foreground"
+                      ? "underline underline-offset-4 text-orange-600 dark:text-orange-400"
+                      : "text-[#6f5f4d] dark:text-[#b7a48f]"
                   }`}
                 >
                   {tag}
                 </span>
                 {tagCounts?.[tag] && (
-                  <span className="flex-shrink-0 ml-2 border border-border rounded-md h-6 min-w-6 flex items-center justify-center">
+                  <span className="flex-shrink-0 ml-2 border border-[#e2d6c5] dark:border-[#3a332a] h-6 min-w-6 flex items-center justify-center text-xs text-[#6f5f4d] dark:text-[#b7a48f]">
                     {tagCounts[tag]}
                   </span>
                 )}

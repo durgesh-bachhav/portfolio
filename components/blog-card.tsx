@@ -1,6 +1,6 @@
-import Link from "next/link";
+import GridSection from "@/components/grid-section";
 import Image from "next/image";
-import { cn } from "@/lib/utils";
+import Link from "next/link";
 
 interface BlogCardProps {
   url: string;
@@ -8,7 +8,6 @@ interface BlogCardProps {
   description: string;
   date: string;
   thumbnail?: string;
-  showRightBorder?: boolean;
 }
 
 export function BlogCard({
@@ -17,39 +16,35 @@ export function BlogCard({
   description,
   date,
   thumbnail,
-  showRightBorder = true,
 }: BlogCardProps) {
   return (
-    <Link
-      href={url}
-      className={cn(
-        "group block relative before:absolute before:-left-0.5 before:top-0 before:z-10 before:h-screen before:w-px before:bg-border before:content-[''] after:absolute after:-top-0.5 after:left-0 after:z-0 after:h-px after:w-screen after:bg-border after:content-['']",
-        showRightBorder && "md:border-r border-border border-b-0"
-      )}
-    >
-      <div className="flex flex-col">
-        {thumbnail && (
-          <div className="relative w-full h-48 overflow-hidden">
-            <Image
-              src={thumbnail}
-              alt={title}
-              fill
-              className="object-cover transition-transform duration-300 group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
+    <Link href={url} className="block h-full group">
+      <GridSection className="h-full p-6">
+        <div className="flex h-full flex-col gap-4">
+          {thumbnail && (
+            <div className="relative h-44 w-full overflow-hidden">
+              <Image
+                src={thumbnail}
+                alt={title}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            </div>
+          )}
+          <div className="space-y-2">
+            <h3 className="text-lg font-semibold text-[#2b241d] dark:text-[#efe6d9] group-hover:underline underline-offset-4">
+              {title}
+            </h3>
+            <p className="text-sm text-[#6f5f4d] dark:text-[#b7a48f]">
+              {description}
+            </p>
+            <time className="block text-xs font-medium text-[#7a6a58] dark:text-[#b7a48f]">
+              {date}
+            </time>
           </div>
-        )}
-
-        <div className="p-6 flex flex-col gap-2">
-          <h3 className="text-xl font-semibold text-card-foreground group-hover:underline underline-offset-4">
-            {title}
-          </h3>
-          <p className="text-muted-foreground text-sm">{description}</p>
-          <time className="block text-sm font-medium text-muted-foreground">
-            {date}
-          </time>
         </div>
-      </div>
+      </GridSection>
     </Link>
   );
 }
