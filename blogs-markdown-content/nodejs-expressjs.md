@@ -1,0 +1,3098 @@
+# Node.js & Express.js: The Complete Guide — Beginner to Advanced
+
+> A comprehensive, production-focused deep-dive into Node.js and Express.js — covering core runtime concepts, HTTP fundamentals, REST API design, middleware, authentication, security, testing, performance optimization, and deployment. Every concept backed with real code.
+
+---
+
+## Table of Contents
+
+1. [What is Node.js?](#1-what-is-nodejs)
+2. [Node.js Core Concepts](#2-nodejs-core-concepts)
+3. [Node.js Built-in Modules](#3-nodejs-built-in-modules)
+4. [NPM & Package Management](#4-npm--package-management)
+5. [Getting Started with Express.js](#5-getting-started-with-expressjs)
+6. [Routing in Express](#6-routing-in-express)
+7. [Middleware — The Heart of Express](#7-middleware--the-heart-of-express)
+8. [Request & Response in Depth](#8-request--response-in-depth)
+9. [REST API Design with Express](#9-rest-api-design-with-express)
+10. [Error Handling](#10-error-handling)
+11. [Authentication & Authorization](#11-authentication--authorization)
+12. [File Uploads & Static Files](#12-file-uploads--static-files)
+13. [Database Integration (MongoDB + PostgreSQL)](#13-database-integration)
+14. [Validation & Sanitization](#14-validation--sanitization)
+15. [Environment Configuration](#15-environment-configuration)
+16. [Logging](#16-logging)
+17. [Testing (Unit + Integration)](#17-testing-unit--integration)
+18. [Security Best Practices](#18-security-best-practices)
+19. [Performance Optimization](#19-performance-optimization)
+20. [Clustering & Worker Threads](#20-clustering--worker-threads)
+21. [WebSockets with Socket.io](#21-websockets-with-socketio)
+22. [Caching with Redis](#22-caching-with-redis)
+23. [Rate Limiting & Throttling](#23-rate-limiting--throttling)
+24. [Real-World Project Structure](#24-real-world-project-structure)
+25. [Deployment & Production Checklist](#25-deployment--production-checklist)
+
+---
+
+## 1. What is Node.js?
+
+Node.js is a **JavaScript runtime built on Chrome's V8 engine**. It allows you to run JavaScript on the server side — outside the browser. Created by Ryan Dahl in 2009, Node.js uses an **event-driven, non-blocking I/O model** that makes it lightweight and efficient for data-intensive real-time applications.
+
+### Why Node.js?
+
+| Feature | Description |
+|---|---|
+| **Single Language** | JavaScript on both frontend and backend |
+| **Non-blocking I/O** | Handles thousands of concurrent connections efficiently |
+| **NPM Ecosystem** | 2M+ packages available |
+| **V8 Engine** | Compiled JavaScript — extremely fast execution |
+| **Real-time** | WebSockets, streaming, live data ideal use cases |
+| **Microservices** | Lightweight, perfect for microservice architectures |
+
+### Node.js vs Traditional Servers
+
+```
+Traditional Server (PHP/Apache):
+  Request 1 → Thread 1 (blocked while waiting for DB) 
+  Request 2 → Thread 2 (blocked while waiting for file) 
+  Request 3 → Thread 3 (blocked while waiting for API)
+  → Needs many threads → High memory usage
+
+Node.js (Single Thread + Event Loop):
+  Request 1 → DB query (non-blocking) → continue
+  Request 2 → File read (non-blocking) → continue
+  Request 3 → API call (non-blocking)  → continue
+  → All on one thread → Low memory, high throughput
+```
+
+### When to use Node.js?
+
+✅ REST APIs and GraphQL servers  
+✅ Real-time apps (chat, notifications, live dashboards)  
+✅ Microservices  
+✅ Streaming applications  
+✅ BFF (Backend for Frontend)  
+✅ CLI tools  
+
+❌ CPU-intensive tasks (image processing, ML) — use Python/Go  
+❌ Heavy computation that blocks the event loop  
+
+---
+
+## 2. Node.js Core Concepts
+
+### 2.1 The Event Loop
+
+The event loop is the **core mechanism** that enables Node.js's non-blocking behaviour. It continuously checks for tasks to execute.
+
+```
+   ┌─────────────────────────────┐
+   │         Call Stack           │  ← Executes synchronous code
+   └────────────┬────────────────┘
+                │ empty?
+   ┌────────────▼────────────────┐
+   │      Microtask Queue         │  ← Promise callbacks, queueMicrotask
+   │   (process.nextTick first)   │
+   └────────────┬────────────────┘
+                │
+   ┌────────────▼────────────────┐
+   │         Event Loop           │
+   │  ┌──────────────────────┐   │
+   │  │  1. timers           │   │  ← setTimeout, setInterval callbacks
+   │  │  2. pending callbacks│   │  ← I/O error callbacks
+   │  │  3. idle/prepare     │   │  ← internal
+   │  │  4. poll             │   │  ← I/O callbacks (file, network)
+   │  │  5. check            │   │  ← setImmediate callbacks
+   │  │  6. close callbacks  │   │  ← socket.on('close')
+   │  └──────────────────────┘   │
+   └─────────────────────────────┘
+```
+
+```js
+// Demonstrating event loop order
+console.log("1 — synchronous");           // runs first (call stack)
+
+setTimeout(() => console.log("2 — setTimeout 0"), 0);    // timers phase
+setImmediate(() => console.log("3 — setImmediate"));      // check phase
+
+Promise.resolve().then(() => console.log("4 — Promise")); // microtask
+process.nextTick(() => console.log("5 — nextTick"));      // nextTick (before microtasks)
+
+console.log("6 — synchronous end");       // runs second (call stack)
+
+// Output order: 1 → 6 → 5 → 4 → 2 → 3
+```
+
+---
+
+### 2.2 Callbacks
+
+The original async pattern in Node.js — a function passed as argument, called when async work completes.
+
+```js
+const fs = require("fs");
+
+// Error-first callback (Node.js convention)
+fs.readFile("./data.txt", "utf8", (err, data) => {
+  if (err) {
+    console.error("Error reading file:", err.message);
+    return;
+  }
+  console.log("File content:", data);
+});
+
+console.log("This runs BEFORE file is read (non-blocking)");
+```
+
+**Callback Hell** — deeply nested callbacks are hard to read:
+
+```js
+// ❌ Callback Hell (Pyramid of Doom)
+getUser(userId, (err, user) => {
+  if (err) return handleError(err);
+  getOrders(user.id, (err, orders) => {
+    if (err) return handleError(err);
+    getProduct(orders[0].productId, (err, product) => {
+      if (err) return handleError(err);
+      sendEmail(user.email, product, (err, result) => {
+        if (err) return handleError(err);
+        console.log("Done:", result);
+      });
+    });
+  });
+});
+```
+
+---
+
+### 2.3 Promises
+
+Promises are a cleaner way to handle async operations — they represent a value that will be available in the future.
+
+```js
+const fs = require("fs/promises");
+
+// Creating a Promise
+const readFileProm = (path) => {
+  return new Promise((resolve, reject) => {
+    fs.readFile(path, "utf8")
+      .then(resolve)
+      .catch(reject);
+  });
+};
+
+// Chaining Promises (vs callback hell)
+getUser(userId)
+  .then(user => getOrders(user.id))
+  .then(orders => getProduct(orders[0].productId))
+  .then(product => sendEmail(user.email, product))
+  .then(result => console.log("Done:", result))
+  .catch(err => console.error("Error:", err));
+
+// Promise.all — run in parallel, wait for all
+const [user, products, settings] = await Promise.all([
+  User.findById(userId),
+  Product.find({ isActive: true }),
+  Settings.findOne({ userId })
+]);
+
+// Promise.allSettled — all complete, regardless of failure
+const results = await Promise.allSettled([
+  fetchFromAPI1(),
+  fetchFromAPI2(),
+  fetchFromAPI3()
+]);
+results.forEach(r => {
+  if (r.status === "fulfilled") console.log(r.value);
+  else console.error(r.reason);
+});
+
+// Promise.race — first one wins
+const first = await Promise.race([
+  fetch("https://api1.example.com"),
+  fetch("https://api2.example.com")
+]);
+
+// Promise.any — first successful (ignores rejections)
+const fastest = await Promise.any([
+  fetch("https://mirror1.example.com"),
+  fetch("https://mirror2.example.com")
+]);
+```
+
+---
+
+### 2.4 Async/Await
+
+Syntactic sugar over Promises — makes async code look and behave like synchronous code.
+
+```js
+// ✅ Clean async/await (equivalent to promise chain above)
+const processOrder = async (userId) => {
+  try {
+    const user     = await getUser(userId);
+    const orders   = await getOrders(user.id);
+    const product  = await getProduct(orders[0].productId);
+    const result   = await sendEmail(user.email, product);
+    console.log("Done:", result);
+    return result;
+  } catch (err) {
+    console.error("Error:", err.message);
+    throw err;
+  }
+};
+
+// Parallel execution with async/await
+const getDashboard = async (userId) => {
+  // ❌ Sequential — slow (waits for each one)
+  const user     = await User.findById(userId);
+  const orders   = await Order.find({ userId });
+  const products = await Product.find({ isActive: true });
+
+  // ✅ Parallel — fast (all fire simultaneously)
+  const [user2, orders2, products2] = await Promise.all([
+    User.findById(userId),
+    Order.find({ userId }),
+    Product.find({ isActive: true })
+  ]);
+};
+
+// Async error handling utilities
+const asyncWrapper = (fn) => async (req, res, next) => {
+  try {
+    await fn(req, res, next);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// Usage in Express
+router.get("/users", asyncWrapper(async (req, res) => {
+  const users = await User.find();
+  res.json(users);
+}));
+```
+
+---
+
+### 2.5 Streams
+
+Streams process data in chunks — perfect for large files without loading everything into memory.
+
+```js
+const fs   = require("fs");
+const zlib = require("zlib");
+
+// ❌ Without streams — loads entire 1GB file into RAM
+const data = fs.readFileSync("huge-file.csv");
+process(data);
+
+// ✅ With streams — processes chunk by chunk (~64KB at a time)
+const readable = fs.createReadStream("huge-file.csv", { encoding: "utf8", highWaterMark: 64 * 1024 });
+const writable = fs.createWriteStream("output.csv");
+
+readable.on("data", (chunk) => {
+  // process each chunk
+  writable.write(processChunk(chunk));
+});
+
+readable.on("end",   () => { writable.end(); console.log("Done"); });
+readable.on("error", (err) => console.error(err));
+
+// Piping streams (most elegant)
+fs.createReadStream("input.txt")
+  .pipe(zlib.createGzip())               // compress on the fly
+  .pipe(fs.createWriteStream("output.txt.gz"))
+  .on("finish", () => console.log("File compressed"));
+
+// Transform Stream — modify data as it flows
+const { Transform } = require("stream");
+
+const upperCaseTransform = new Transform({
+  transform(chunk, encoding, callback) {
+    this.push(chunk.toString().toUpperCase());
+    callback();
+  }
+});
+
+fs.createReadStream("input.txt")
+  .pipe(upperCaseTransform)
+  .pipe(fs.createWriteStream("output.txt"));
+
+// Streaming HTTP response (Express)
+app.get("/download-large", (req, res) => {
+  res.setHeader("Content-Type", "application/octet-stream");
+  res.setHeader("Content-Disposition", "attachment; filename=data.csv");
+  
+  const fileStream = fs.createReadStream("./big-data.csv");
+  fileStream.pipe(res);    // pipe directly to response
+});
+```
+
+---
+
+### 2.6 EventEmitter
+
+Node.js is built around events. The `EventEmitter` class is the backbone of streams, HTTP, and many other modules.
+
+```js
+const EventEmitter = require("events");
+
+class OrderService extends EventEmitter {
+  async placeOrder(orderData) {
+    // ... process order ...
+    const order = await saveOrderToDB(orderData);
+
+    // Emit events — other parts of the app can listen
+    this.emit("order:placed", order);
+    this.emit("order:notify-user", order.userId, order);
+
+    return order;
+  }
+}
+
+const orderService = new OrderService();
+
+// Listen to events
+orderService.on("order:placed", async (order) => {
+  await updateInventory(order.items);
+  console.log("Inventory updated for order:", order.id);
+});
+
+orderService.on("order:notify-user", async (userId, order) => {
+  await sendEmailNotification(userId, `Order #${order.id} confirmed!`);
+});
+
+// Once — listen only one time
+orderService.once("order:placed", (order) => {
+  console.log("First order ever placed:", order.id);
+});
+
+// Remove listener
+const handler = (order) => console.log(order);
+orderService.on("order:placed", handler);
+orderService.off("order:placed", handler);  // same as removeListener
+
+// Max listeners warning (default: 10)
+orderService.setMaxListeners(20);
+```
+
+---
+
+## 3. Node.js Built-in Modules
+
+### 3.1 `fs` — File System
+
+```js
+const fs   = require("fs");
+const fsp  = require("fs/promises");
+const path = require("path");
+
+// ─── Async with Promises ───────────────────────────────────────────
+// Read file
+const content = await fsp.readFile("./config.json", "utf8");
+const config  = JSON.parse(content);
+
+// Write file (creates or overwrites)
+await fsp.writeFile("./output.txt", "Hello World", "utf8");
+
+// Append to file
+await fsp.appendFile("./log.txt", `\n[${new Date().toISOString()}] Entry`);
+
+// Read directory
+const files = await fsp.readdir("./uploads");
+console.log(files); // ['image1.jpg', 'doc.pdf', ...]
+
+// File stats
+const stats = await fsp.stat("./data.json");
+console.log(stats.size, stats.mtime, stats.isFile(), stats.isDirectory());
+
+// Copy / Move / Delete
+await fsp.copyFile("./src.txt", "./dest.txt");
+await fsp.rename("./old.txt", "./new.txt");  // also moves
+await fsp.unlink("./temp.txt");              // delete file
+await fsp.rm("./dir", { recursive: true });  // delete directory
+
+// Create directory
+await fsp.mkdir("./uploads/2024", { recursive: true });
+
+// Check if file exists
+const exists = await fsp.access("./file.txt")
+  .then(() => true).catch(() => false);
+
+// ─── Watch files for changes ───────────────────────────────────────
+fs.watch("./config.json", (eventType, filename) => {
+  console.log(`Config changed: ${eventType} on ${filename}`);
+  // reload config...
+});
+```
+
+---
+
+### 3.2 `path` — File Paths
+
+```js
+const path = require("path");
+
+path.join("/users", "alice", "docs", "file.txt")
+// → '/users/alice/docs/file.txt'  (OS-independent)
+
+path.resolve("./config", "../.env")
+// → '/absolute/path/to/.env'
+
+path.dirname("/users/alice/file.txt")   // → '/users/alice'
+path.basename("/users/alice/file.txt")  // → 'file.txt'
+path.basename("/users/alice/file.txt", ".txt") // → 'file'
+path.extname("/users/alice/file.txt")   // → '.txt'
+
+path.parse("/users/alice/file.txt")
+// { root: '/', dir: '/users/alice', base: 'file.txt', ext: '.txt', name: 'file' }
+
+// __dirname alternative in ESM
+import { fileURLToPath } from "url";
+import { dirname }       from "path";
+const __filename = fileURLToPath(import.meta.url);
+const __dirname  = dirname(__filename);
+```
+
+---
+
+### 3.3 `http` / `https` — Low-level HTTP
+
+```js
+const http = require("http");
+
+// Create a basic server without Express
+const server = http.createServer((req, res) => {
+  const { method, url } = req;
+
+  // Route manually
+  if (method === "GET" && url === "/") {
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ message: "Hello World" }));
+
+  } else if (method === "POST" && url === "/data") {
+    let body = "";
+    req.on("data", chunk => body += chunk.toString());
+    req.on("end", () => {
+      const data = JSON.parse(body);
+      res.writeHead(201, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ received: data }));
+    });
+
+  } else {
+    res.writeHead(404);
+    res.end("Not Found");
+  }
+});
+
+server.listen(3000, () => console.log("Server on port 3000"));
+
+// HTTPS server
+const https = require("https");
+const fs    = require("fs");
+
+const httpsServer = https.createServer({
+  key:  fs.readFileSync("./ssl/private.key"),
+  cert: fs.readFileSync("./ssl/certificate.crt")
+}, requestHandler);
+httpsServer.listen(443);
+```
+
+---
+
+### 3.4 `os`, `crypto`, `url`, `querystring`
+
+```js
+const os     = require("os");
+const crypto = require("crypto");
+const { URL } = require("url");
+
+// ─── OS ───────────────────────────────────
+console.log(os.cpus().length);        // number of CPU cores
+console.log(os.totalmem());           // total RAM in bytes
+console.log(os.freemem());            // free RAM in bytes
+console.log(os.platform());           // 'linux', 'darwin', 'win32'
+console.log(os.hostname());           // machine hostname
+console.log(os.tmpdir());             // temp directory path
+
+// ─── Crypto ───────────────────────────────
+// Random bytes (for tokens, IDs)
+const token = crypto.randomBytes(32).toString("hex");
+
+// Hash (SHA-256)
+const hash  = crypto.createHash("sha256").update("password").digest("hex");
+
+// HMAC (for API signatures)
+const hmac  = crypto.createHmac("sha256", "secret-key").update(data).digest("hex");
+
+// UUID v4
+const { randomUUID } = require("crypto");
+const id = randomUUID(); // '110e8400-e29b-41d4-a716-446655440000'
+
+// Encrypt / Decrypt (AES-256-GCM)
+const encrypt = (text, key) => {
+  const iv         = crypto.randomBytes(12);
+  const cipher     = crypto.createCipheriv("aes-256-gcm", key, iv);
+  const encrypted  = Buffer.concat([cipher.update(text, "utf8"), cipher.final()]);
+  const authTag    = cipher.getAuthTag();
+  return { iv: iv.toString("hex"), encrypted: encrypted.toString("hex"), authTag: authTag.toString("hex") };
+};
+
+// ─── URL ──────────────────────────────────
+const url = new URL("https://api.example.com/users?page=2&limit=10#section");
+console.log(url.hostname);                // 'api.example.com'
+console.log(url.pathname);               // '/users'
+console.log(url.searchParams.get("page")); // '2'
+url.searchParams.set("page", "3");
+console.log(url.toString());             // 'https://api.example.com/users?page=3&limit=10#section'
+```
+
+---
+
+## 4. NPM & Package Management
+
+### 4.1 Essential Commands
+
+```bash
+npm init -y                        # init package.json with defaults
+npm install express                # install & save to dependencies
+npm install --save-dev nodemon     # save to devDependencies
+npm install -g pm2                 # global install
+npm uninstall lodash               # remove package
+npm update                         # update all packages
+npm outdated                       # show outdated packages
+npm audit                          # check for security vulnerabilities
+npm audit fix                      # auto-fix vulnerabilities
+npm list                           # list installed packages
+npm list --depth=0                 # only top-level packages
+npm ci                             # clean install (for CI — uses package-lock.json)
+npx create-express-api my-app      # run without installing globally
+```
+
+### 4.2 `package.json` Deep Dive
+
+```json
+{
+  "name": "my-api",
+  "version": "1.0.0",
+  "description": "Production REST API",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start":       "node src/index.js",
+    "dev":         "nodemon src/index.js",
+    "test":        "jest --coverage",
+    "test:watch":  "jest --watch",
+    "lint":        "eslint src/",
+    "lint:fix":    "eslint src/ --fix",
+    "build":       "tsc",
+    "migrate":     "node scripts/migrate.js",
+    "seed":        "node scripts/seed.js"
+  },
+  "dependencies": {
+    "express":        "^4.18.2",
+    "mongoose":       "^7.5.0",
+    "jsonwebtoken":   "^9.0.2",
+    "bcrypt":         "^5.1.1",
+    "cors":           "^2.8.5",
+    "helmet":         "^7.0.0",
+    "morgan":         "^1.10.0",
+    "express-validator": "^7.0.1",
+    "redis":          "^4.6.8",
+    "dotenv":         "^16.3.1",
+    "winston":        "^3.10.0",
+    "multer":         "^1.4.5-lts.1",
+    "compression":    "^1.7.4",
+    "express-rate-limit": "^7.1.1"
+  },
+  "devDependencies": {
+    "nodemon":  "^3.0.1",
+    "jest":     "^29.7.0",
+    "supertest": "^6.3.3",
+    "eslint":   "^8.49.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm":  ">=9.0.0"
+  }
+}
+```
+
+### 4.3 Versioning
+
+```
+"express": "^4.18.2"   → >=4.18.2 <5.0.0  (compatible minor/patch)
+"express": "~4.18.2"   → >=4.18.2 <4.19.0 (only patch updates)
+"express": "4.18.2"    → exactly 4.18.2
+"express": "*"         → any version (avoid in production)
+"express": ">=4.0.0"   → 4.0.0 or above
+```
+
+---
+
+## 5. Getting Started with Express.js
+
+Express.js is a **minimal, unopinionated web framework** for Node.js that provides a thin layer of HTTP utilities for building web apps and APIs.
+
+### 5.1 First Express Server
+
+```bash
+npm install express
+```
+
+```js
+// src/index.js
+import express from "express";
+import { config } from "dotenv";
+config();
+
+const app  = express();
+const PORT = process.env.PORT || 3000;
+
+// Parse JSON bodies
+app.use(express.json());
+// Parse URL-encoded bodies (HTML form submissions)
+app.use(express.urlencoded({ extended: true }));
+
+// Basic route
+app.get("/", (req, res) => {
+  res.json({ message: "Welcome to the API", version: "1.0.0" });
+});
+
+// Health check endpoint
+app.get("/health", (req, res) => {
+  res.json({
+    status:    "ok",
+    uptime:    process.uptime(),
+    timestamp: new Date().toISOString(),
+    memory:    process.memoryUsage()
+  });
+});
+
+// Start server
+const server = app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
+
+// Graceful shutdown
+process.on("SIGTERM", () => {
+  console.log("SIGTERM received, shutting down gracefully...");
+  server.close(() => {
+    console.log("Server closed");
+    process.exit(0);
+  });
+});
+
+export default app;
+```
+
+---
+
+### 5.2 Application Object (`app`)
+
+```js
+// app settings
+app.set("trust proxy", 1);           // trust first proxy (for HTTPS behind nginx)
+app.set("x-powered-by", false);      // hide Express header (security)
+app.set("json spaces", 2);           // pretty-print JSON in development
+
+// app methods
+app.get(path, ...handlers)           // GET route
+app.post(path, ...handlers)          // POST route
+app.put(path, ...handlers)           // PUT route
+app.patch(path, ...handlers)         // PATCH route
+app.delete(path, ...handlers)        // DELETE route
+app.all(path, ...handlers)           // all HTTP methods
+app.use([path], ...middlewares)      // mount middleware
+app.route(path)                      // chainable route handler
+app.listen(port, [hostname], cb)     // start server
+app.locals                           // app-level variables
+```
+
+---
+
+## 6. Routing in Express
+
+### 6.1 Basic Routing
+
+```js
+// Route with URL parameters
+app.get("/users/:id", (req, res) => {
+  const { id } = req.params;
+  res.json({ userId: id });
+});
+
+// Multiple parameters
+app.get("/users/:userId/orders/:orderId", (req, res) => {
+  const { userId, orderId } = req.params;
+  res.json({ userId, orderId });
+});
+
+// Query parameters
+// GET /products?category=electronics&sort=price&order=asc&page=2
+app.get("/products", (req, res) => {
+  const { category, sort = "name", order = "asc", page = 1, limit = 10 } = req.query;
+  res.json({ category, sort, order, page, limit });
+});
+
+// Optional parameter (using regex or ?)
+app.get("/users/:id?", (req, res) => {
+  if (req.params.id) {
+    res.json({ user: req.params.id });
+  } else {
+    res.json({ users: "all" });
+  }
+});
+
+// Wildcard routes
+app.get("/files/*", (req, res) => {
+  res.send(`File path: ${req.params[0]}`);
+});
+```
+
+---
+
+### 6.2 Express Router — Modular Routes
+
+```js
+// routes/userRoutes.js
+import { Router } from "express";
+import {
+  getAllUsers, getUserById, createUser, updateUser, deleteUser
+} from "../controllers/userController.js";
+import { authenticate, authorize } from "../middleware/auth.js";
+import { validateUser } from "../middleware/validators.js";
+
+const router = Router();
+
+// Apply auth middleware to all routes in this router
+router.use(authenticate);
+
+router.route("/")
+  .get(getAllUsers)
+  .post(authorize("admin"), validateUser, createUser);
+
+router.route("/:id")
+  .get(getUserById)
+  .put(authorize("admin"), validateUser, updateUser)
+  .patch(authorize("admin"), updateUser)
+  .delete(authorize("admin"), deleteUser);
+
+// Nested router — /users/:userId/orders
+import orderRoutes from "./orderRoutes.js";
+router.use("/:userId/orders", orderRoutes);
+
+export default router;
+```
+
+```js
+// routes/index.js — centralized route registration
+import { Router } from "express";
+import userRoutes    from "./userRoutes.js";
+import productRoutes from "./productRoutes.js";
+import orderRoutes   from "./orderRoutes.js";
+import authRoutes    from "./authRoutes.js";
+
+const router = Router();
+
+router.use("/auth",     authRoutes);
+router.use("/users",    userRoutes);
+router.use("/products", productRoutes);
+router.use("/orders",   orderRoutes);
+
+export default router;
+```
+
+```js
+// app.js — mount routes
+app.use("/api/v1", router);
+
+// All routes now accessible at:
+// GET    /api/v1/users
+// POST   /api/v1/users
+// GET    /api/v1/users/:id
+// PUT    /api/v1/users/:id
+// DELETE /api/v1/users/:id
+```
+
+---
+
+### 6.3 Route Chaining
+
+```js
+// Chain multiple handlers with app.route()
+app.route("/users")
+  .get((req, res) => res.json({ action: "list users" }))
+  .post((req, res) => res.status(201).json({ action: "create user" }));
+
+app.route("/users/:id")
+  .get((req, res) => res.json({ action: "get user" }))
+  .put((req, res) => res.json({ action: "update user" }))
+  .delete((req, res) => res.json({ action: "delete user" }));
+```
+
+---
+
+## 7. Middleware — The Heart of Express
+
+Middleware functions have access to `req`, `res`, and `next`. They form a pipeline — each middleware can modify the request/response and call `next()` to pass control to the next middleware.
+
+```
+Request → [middleware 1] → [middleware 2] → [route handler] → Response
+               ↓ next()          ↓ next()
+```
+
+### 7.1 Types of Middleware
+
+#### Application-Level Middleware
+
+```js
+// Runs for every request
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  next(); // MUST call next() or the request hangs
+});
+
+// Only for specific path
+app.use("/api", (req, res, next) => {
+  res.setHeader("X-API-Version", "1.0");
+  next();
+});
+```
+
+#### Router-Level Middleware
+
+```js
+const router = Router();
+router.use(authenticate);   // applied to all routes in this router
+router.get("/profile", getProfile);
+```
+
+#### Error-Handling Middleware
+
+```js
+// MUST have 4 parameters: (err, req, res, next)
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(err.statusCode || 500).json({
+    success: false,
+    message: err.message || "Internal Server Error"
+  });
+});
+```
+
+#### Built-in Middleware
+
+```js
+app.use(express.json({ limit: "10kb" }));              // parse JSON body
+app.use(express.urlencoded({ extended: true }));        // parse URL-encoded body
+app.use(express.static("public"));                     // serve static files
+app.use(express.static("public", {
+  maxAge: "1d",           // cache for 1 day
+  etag: true,
+  lastModified: true
+}));
+```
+
+#### Third-Party Middleware
+
+```js
+import cors        from "cors";
+import helmet      from "helmet";
+import morgan      from "morgan";
+import compression from "compression";
+import rateLimit   from "express-rate-limit";
+
+// CORS — Cross-Origin Resource Sharing
+app.use(cors({
+  origin: ["https://myapp.com", "https://admin.myapp.com"],
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,         // allow cookies
+  maxAge: 86400              // preflight cache: 24h
+}));
+
+// Helmet — sets security HTTP headers
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc:  ["'self'", "'unsafe-inline'"],
+      styleSrc:   ["'self'", "https://fonts.googleapis.com"]
+    }
+  },
+  hsts: { maxAge: 31536000, includeSubDomains: true }
+}));
+
+// Morgan — HTTP request logger
+app.use(morgan("dev"));    // 'combined', 'tiny', 'short', 'dev'
+
+// Custom Morgan format
+app.use(morgan(":method :url :status :res[content-length] - :response-time ms :remote-addr"));
+
+// Compression — gzip responses
+app.use(compression({
+  level: 6,                // compression level 1-9
+  threshold: 1024,         // only compress responses > 1KB
+  filter: (req, res) => {
+    if (req.headers["x-no-compression"]) return false;
+    return compression.filter(req, res);
+  }
+}));
+```
+
+---
+
+### 7.2 Writing Custom Middleware
+
+```js
+// Request timing middleware
+export const requestTimer = (req, res, next) => {
+  const start = Date.now();
+  res.on("finish", () => {
+    const duration = Date.now() - start;
+    console.log(`${req.method} ${req.originalUrl} → ${res.statusCode} [${duration}ms]`);
+  });
+  next();
+};
+
+// Request ID middleware
+import { randomUUID } from "crypto";
+export const requestId = (req, res, next) => {
+  req.id = req.headers["x-request-id"] || randomUUID();
+  res.setHeader("X-Request-ID", req.id);
+  next();
+};
+
+// JSON body size limiter
+export const limitBodySize = (maxSize) => (req, res, next) => {
+  let size = 0;
+  req.on("data", (chunk) => {
+    size += chunk.length;
+    if (size > maxSize) {
+      res.status(413).json({ error: "Payload Too Large" });
+      req.destroy();
+    }
+  });
+  next();
+};
+
+// API key middleware
+export const requireApiKey = (req, res, next) => {
+  const apiKey = req.headers["x-api-key"];
+  if (!apiKey || apiKey !== process.env.API_KEY) {
+    return res.status(401).json({ error: "Invalid or missing API key" });
+  }
+  next();
+};
+
+// Apply middleware
+app.use(requestId);
+app.use(requestTimer);
+app.use("/internal", requireApiKey);
+```
+
+---
+
+## 8. Request & Response in Depth
+
+### 8.1 Request Object (`req`)
+
+```js
+app.post("/example/:id", (req, res) => {
+  // URL Parameters
+  req.params           // { id: '123' }
+  req.params.id        // '123'
+
+  // Query String  (?page=2&limit=10)
+  req.query            // { page: '2', limit: '10' }
+  req.query.page       // '2' (always string!)
+  +req.query.page      // 2  (coerce to number)
+
+  // Request Body (requires express.json() middleware)
+  req.body             // { name: 'Alice', age: 29 }
+  req.body.name        // 'Alice'
+
+  // Headers
+  req.headers                        // all headers (lowercase)
+  req.headers["content-type"]        // 'application/json'
+  req.headers["authorization"]       // 'Bearer eyJ...'
+  req.get("Content-Type")            // method shorthand
+
+  // Other useful properties
+  req.method          // 'POST'
+  req.url             // '/example/123?page=2'
+  req.originalUrl     // full URL including mount path
+  req.path            // '/example/123' (no query string)
+  req.hostname        // 'api.example.com'
+  req.protocol        // 'https'
+  req.secure          // true if HTTPS
+  req.ip              // '192.168.1.1'
+  req.ips             // ['client', 'proxy1', 'proxy2'] (with trust proxy)
+  req.cookies         // requires cookie-parser middleware
+  req.signedCookies   // requires cookie-parser with secret
+
+  // Content negotiation
+  req.accepts("application/json")    // check client accepts JSON
+  req.acceptsLanguages("en", "fr")   // preferred language
+  req.is("application/json")         // check Content-Type
+
+  // Custom properties (set by middleware)
+  req.user            // set by auth middleware
+  req.id              // set by requestId middleware
+});
+```
+
+### 8.2 Response Object (`res`)
+
+```js
+app.get("/responses", (req, res) => {
+  // ─── Status codes ───────────────────────────────────
+  res.status(200)   // chainable
+  res.statusCode = 404   // alternative
+
+  // ─── Send responses ─────────────────────────────────
+  res.send("Hello World")                    // string → text/html
+  res.send(Buffer.from("binary data"))       // Buffer → application/octet-stream
+  res.send({ key: "value" })                 // object → JSON (but prefer res.json)
+
+  res.json({ success: true, data: {} })      // JSON with correct Content-Type
+  res.json(null)                             // null
+  res.jsonp({ data: "callback support" })   // JSONP
+
+  res.sendFile(path.join(__dirname, "index.html"))   // send a file
+  res.download("./report.pdf", "Report_2024.pdf")    // force download
+
+  // ─── Status + JSON in one call ──────────────────────
+  res.status(201).json({ message: "Created" })
+  res.status(404).json({ error: "Not Found" })
+
+  // ─── Headers ────────────────────────────────────────
+  res.set("X-Custom-Header", "value")          // set header
+  res.set({ "X-A": "1", "X-B": "2" })          // set multiple
+  res.setHeader("Content-Type", "text/plain")  // native Node.js
+  res.get("Content-Type")                      // get header value
+  res.removeHeader("X-Powered-By")
+
+  // ─── Cookies ────────────────────────────────────────
+  res.cookie("token", "jwt-value", {
+    httpOnly:  true,           // not accessible via JS
+    secure:    true,           // HTTPS only
+    sameSite:  "strict",       // CSRF protection
+    maxAge:    7 * 24 * 60 * 60 * 1000,  // 7 days in ms
+    domain:    ".example.com"
+  });
+  res.clearCookie("token");
+
+  // ─── Redirects ──────────────────────────────────────
+  res.redirect("/new-url")           // 302 by default
+  res.redirect(301, "/permanent")    // permanent redirect
+  res.redirect("back")               // redirect to Referer header
+
+  // ─── Streaming ──────────────────────────────────────
+  res.write("chunk 1 ");
+  res.write("chunk 2 ");
+  res.end("done");
+
+  // ─── End without data ───────────────────────────────
+  res.status(204).end();   // 204 No Content
+});
+```
+
+### 8.3 Standardized API Response Helper
+
+```js
+// utils/apiResponse.js
+export class ApiResponse {
+  static success(res, data, message = "Success", statusCode = 200) {
+    return res.status(statusCode).json({
+      success: true,
+      message,
+      data,
+      timestamp: new Date().toISOString()
+    });
+  }
+
+  static created(res, data, message = "Resource created") {
+    return this.success(res, data, message, 201);
+  }
+
+  static error(res, message = "Internal Server Error", statusCode = 500, errors = null) {
+    const response = { success: false, message, timestamp: new Date().toISOString() };
+    if (errors) response.errors = errors;
+    return res.status(statusCode).json(response);
+  }
+
+  static notFound(res, message = "Resource not found") {
+    return this.error(res, message, 404);
+  }
+
+  static unauthorized(res, message = "Unauthorized") {
+    return this.error(res, message, 401);
+  }
+
+  static forbidden(res, message = "Forbidden") {
+    return this.error(res, message, 403);
+  }
+
+  static paginated(res, data, pagination, message = "Success") {
+    return res.status(200).json({
+      success: true,
+      message,
+      data,
+      pagination,
+      timestamp: new Date().toISOString()
+    });
+  }
+}
+
+// Usage in controllers
+import { ApiResponse } from "../utils/apiResponse.js";
+
+const getUsers = async (req, res) => {
+  const users = await User.find().lean();
+  return ApiResponse.success(res, users, "Users fetched");
+};
+```
+
+---
+
+## 9. REST API Design with Express
+
+### 9.1 RESTful Conventions
+
+```
+Resource: /users
+  GET    /users              → list all users
+  POST   /users              → create a new user
+  GET    /users/:id          → get a specific user
+  PUT    /users/:id          → replace a user (full update)
+  PATCH  /users/:id          → partial update
+  DELETE /users/:id          → delete a user
+
+Nested Resources:
+  GET    /users/:id/orders       → user's orders
+  POST   /users/:id/orders       → create order for user
+  GET    /users/:id/orders/:oid  → specific order
+
+Filtering, Sorting, Pagination:
+  GET /products?category=electronics&minPrice=100&maxPrice=500
+  GET /users?sort=name&order=asc&page=2&limit=20
+  GET /products?fields=name,price,category   (sparse fieldsets)
+  GET /users?search=alice                     (search)
+
+API Versioning:
+  /api/v1/users    → version in URL (most common)
+  /api/users + header: API-Version: 1  (header versioning)
+```
+
+---
+
+### 9.2 Complete CRUD Controller
+
+```js
+// controllers/productController.js
+import Product from "../models/Product.js";
+import { ApiResponse } from "../utils/apiResponse.js";
+import { AppError }    from "../utils/AppError.js";
+
+// GET /api/v1/products
+export const getAllProducts = async (req, res, next) => {
+  try {
+    const {
+      category, minPrice, maxPrice, search, tags,
+      sort = "-createdAt", page = 1, limit = 10,
+      fields
+    } = req.query;
+
+    // Build filter
+    const filter = { isActive: true };
+    if (category)   filter.category = category;
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = +minPrice;
+      if (maxPrice) filter.price.$lte = +maxPrice;
+    }
+    if (search)     filter.$text = { $search: search };
+    if (tags)       filter.tags  = { $in: tags.split(",") };
+
+    // Build projection
+    const projection = fields ? fields.split(",").join(" ") : "";
+
+    // Execute
+    const skip = (page - 1) * limit;
+    const [products, total] = await Promise.all([
+      Product.find(filter).sort(sort).skip(+skip).limit(+limit).select(projection).lean(),
+      Product.countDocuments(filter)
+    ]);
+
+    return ApiResponse.paginated(res, products, {
+      total, page: +page, limit: +limit, pages: Math.ceil(total / limit)
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// GET /api/v1/products/:id
+export const getProductById = async (req, res, next) => {
+  try {
+    const product = await Product.findById(req.params.id).populate("seller", "name email").lean();
+    if (!product) return next(new AppError("Product not found", 404));
+    return ApiResponse.success(res, product);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// POST /api/v1/products
+export const createProduct = async (req, res, next) => {
+  try {
+    const product = await Product.create({ ...req.body, seller: req.user.id });
+    return ApiResponse.created(res, product, "Product created successfully");
+  } catch (err) {
+    next(err);
+  }
+};
+
+// PUT /api/v1/products/:id
+export const updateProduct = async (req, res, next) => {
+  try {
+    const product = await Product.findByIdAndUpdate(
+      req.params.id, req.body,
+      { new: true, runValidators: true }
+    );
+    if (!product) return next(new AppError("Product not found", 404));
+    return ApiResponse.success(res, product, "Product updated");
+  } catch (err) {
+    next(err);
+  }
+};
+
+// DELETE /api/v1/products/:id
+export const deleteProduct = async (req, res, next) => {
+  try {
+    const product = await Product.findByIdAndDelete(req.params.id);
+    if (!product) return next(new AppError("Product not found", 404));
+    return ApiResponse.success(res, null, "Product deleted");
+  } catch (err) {
+    next(err);
+  }
+};
+```
+
+---
+
+## 10. Error Handling
+
+### 10.1 Custom Error Class
+
+```js
+// utils/AppError.js
+export class AppError extends Error {
+  constructor(message, statusCode = 500, errors = null) {
+    super(message);
+    this.statusCode  = statusCode;
+    this.status      = statusCode >= 400 && statusCode < 500 ? "fail" : "error";
+    this.isOperational = true;     // known, expected error
+    this.errors      = errors;
+    Error.captureStackTrace(this, this.constructor);
+  }
+}
+
+// Common error factories
+AppError.notFound     = (msg = "Not found")         => new AppError(msg, 404);
+AppError.unauthorized = (msg = "Unauthorized")       => new AppError(msg, 401);
+AppError.forbidden    = (msg = "Forbidden")          => new AppError(msg, 403);
+AppError.badRequest   = (msg = "Bad request")        => new AppError(msg, 400);
+AppError.conflict     = (msg = "Conflict")           => new AppError(msg, 409);
+AppError.tooMany      = (msg = "Too many requests")  => new AppError(msg, 429);
+```
+
+### 10.2 Global Error Handler
+
+```js
+// middleware/errorHandler.js
+import { AppError } from "../utils/AppError.js";
+
+// Handle Mongoose CastError (invalid ObjectId)
+const handleCastError = (err) =>
+  new AppError(`Invalid ${err.path}: ${err.value}`, 400);
+
+// Handle Mongoose duplicate key
+const handleDuplicateKeyError = (err) => {
+  const field = Object.keys(err.keyValue)[0];
+  return new AppError(`${field} already exists: '${err.keyValue[field]}'`, 409);
+};
+
+// Handle Mongoose validation error
+const handleValidationError = (err) => {
+  const errors = Object.values(err.errors).map(e => ({ field: e.path, message: e.message }));
+  return new AppError("Validation failed", 422, errors);
+};
+
+// Handle JWT errors
+const handleJWTError    = () => new AppError("Invalid token. Please login again.", 401);
+const handleJWTExpired  = () => new AppError("Token expired. Please login again.", 401);
+
+// Development error response (full details)
+const sendDevError = (err, res) => {
+  res.status(err.statusCode || 500).json({
+    success: false,
+    status:  err.status,
+    message: err.message,
+    errors:  err.errors,
+    stack:   err.stack
+  });
+};
+
+// Production error response (safe details only)
+const sendProdError = (err, res) => {
+  if (err.isOperational) {
+    // Known error — safe to expose
+    res.status(err.statusCode).json({
+      success: false,
+      message: err.message,
+      errors:  err.errors
+    });
+  } else {
+    // Unknown error — don't leak details
+    console.error("CRITICAL ERROR:", err);
+    res.status(500).json({ success: false, message: "Something went wrong" });
+  }
+};
+
+// ─── Global Error Handler Middleware ──────────────────────────────
+export const globalErrorHandler = (err, req, res, next) => {
+  err.statusCode = err.statusCode || 500;
+  err.status     = err.status     || "error";
+
+  if (process.env.NODE_ENV === "development") {
+    return sendDevError(err, res);
+  }
+
+  // Transform known Mongoose/JWT errors into AppErrors
+  let error = Object.assign(Object.create(Object.getPrototypeOf(err)), err);
+  if (err.name === "CastError")            error = handleCastError(err);
+  if (err.code === 11000)                  error = handleDuplicateKeyError(err);
+  if (err.name === "ValidationError")      error = handleValidationError(err);
+  if (err.name === "JsonWebTokenError")    error = handleJWTError();
+  if (err.name === "TokenExpiredError")    error = handleJWTExpired();
+
+  sendProdError(error, res);
+};
+
+// Mount as the LAST middleware in app.js
+app.use(globalErrorHandler);
+```
+
+### 10.3 Async Error Wrapper
+
+```js
+// utils/catchAsync.js
+export const catchAsync = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
+// Usage — no more try/catch in every controller
+export const getUser = catchAsync(async (req, res, next) => {
+  const user = await User.findById(req.params.id);
+  if (!user) return next(AppError.notFound("User not found"));
+  res.json({ success: true, data: user });
+});
+```
+
+### 10.4 Unhandled Rejections & Uncaught Exceptions
+
+```js
+// Handle unhandled promise rejections (e.g., DB connection failure)
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("Unhandled Rejection at:", promise, "reason:", reason);
+  // Graceful shutdown
+  server.close(() => process.exit(1));
+});
+
+// Handle uncaught synchronous exceptions
+process.on("uncaughtException", (err) => {
+  console.error("Uncaught Exception:", err);
+  process.exit(1);  // must exit — process is in undefined state
+});
+
+// Handle SIGINT (Ctrl+C)
+process.on("SIGINT", () => {
+  console.log("SIGINT received, shutting down...");
+  server.close(() => {
+    mongoose.connection.close(false, () => process.exit(0));
+  });
+});
+```
+
+---
+
+## 11. Authentication & Authorization
+
+### 11.1 JWT Authentication
+
+```bash
+npm install jsonwebtoken bcrypt cookie-parser
+```
+
+```js
+// utils/jwt.js
+import jwt from "jsonwebtoken";
+
+export const signToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRES_IN || "7d",
+    issuer: "my-api",
+    audience: "my-app"
+  });
+
+export const signRefreshToken = (payload) =>
+  jwt.sign(payload, process.env.JWT_REFRESH_SECRET, { expiresIn: "30d" });
+
+export const verifyToken = (token) =>
+  jwt.verify(token, process.env.JWT_SECRET);
+
+export const verifyRefreshToken = (token) =>
+  jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+```
+
+```js
+// controllers/authController.js
+import bcrypt from "bcrypt";
+import User   from "../models/User.js";
+import { signToken, signRefreshToken, verifyRefreshToken } from "../utils/jwt.js";
+import { AppError }   from "../utils/AppError.js";
+import { catchAsync } from "../utils/catchAsync.js";
+
+// POST /api/v1/auth/register
+export const register = catchAsync(async (req, res, next) => {
+  const { name, email, password } = req.body;
+
+  const exists = await User.findOne({ email });
+  if (exists) return next(new AppError("Email already registered", 409));
+
+  const hashedPassword = await bcrypt.hash(password, 12);
+  const user = await User.create({ name, email, password: hashedPassword });
+
+  const accessToken  = signToken({ id: user._id, role: user.role });
+  const refreshToken = signRefreshToken({ id: user._id });
+
+  // Store refresh token in httpOnly cookie
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true, secure: true, sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000   // 30 days
+  });
+
+  res.status(201).json({
+    success: true,
+    accessToken,
+    user: { id: user._id, name: user.name, email: user.email, role: user.role }
+  });
+});
+
+// POST /api/v1/auth/login
+export const login = catchAsync(async (req, res, next) => {
+  const { email, password } = req.body;
+
+  const user = await User.findOne({ email }).select("+password");
+  if (!user || !(await bcrypt.compare(password, user.password))) {
+    return next(new AppError("Invalid email or password", 401));
+  }
+
+  const accessToken  = signToken({ id: user._id, role: user.role });
+  const refreshToken = signRefreshToken({ id: user._id });
+
+  res.cookie("refreshToken", refreshToken, {
+    httpOnly: true, secure: true, sameSite: "strict",
+    maxAge: 30 * 24 * 60 * 60 * 1000
+  });
+
+  res.json({
+    success: true,
+    accessToken,
+    user: { id: user._id, name: user.name, email: user.email, role: user.role }
+  });
+});
+
+// POST /api/v1/auth/refresh
+export const refreshToken = catchAsync(async (req, res, next) => {
+  const token = req.cookies.refreshToken;
+  if (!token) return next(new AppError("Refresh token not found", 401));
+
+  const decoded = verifyRefreshToken(token);
+  const user    = await User.findById(decoded.id);
+  if (!user) return next(new AppError("User not found", 401));
+
+  const newAccessToken = signToken({ id: user._id, role: user.role });
+  res.json({ success: true, accessToken: newAccessToken });
+});
+
+// POST /api/v1/auth/logout
+export const logout = (req, res) => {
+  res.clearCookie("refreshToken");
+  res.json({ success: true, message: "Logged out" });
+};
+```
+
+---
+
+### 11.2 Auth Middleware
+
+```js
+// middleware/auth.js
+import { verifyToken } from "../utils/jwt.js";
+import User from "../models/User.js";
+import { AppError } from "../utils/AppError.js";
+import { catchAsync } from "../utils/catchAsync.js";
+
+export const authenticate = catchAsync(async (req, res, next) => {
+  // Get token from header or cookie
+  let token;
+  if (req.headers.authorization?.startsWith("Bearer ")) {
+    token = req.headers.authorization.split(" ")[1];
+  } else if (req.cookies?.accessToken) {
+    token = req.cookies.accessToken;
+  }
+
+  if (!token) return next(AppError.unauthorized("Please log in to access this resource"));
+
+  // Verify token
+  const decoded = verifyToken(token);
+
+  // Check if user still exists
+  const user = await User.findById(decoded.id).select("-password");
+  if (!user) return next(AppError.unauthorized("User no longer exists"));
+
+  // Check if user changed password after token was issued
+  if (user.passwordChangedAt) {
+    const changedAt = Math.floor(user.passwordChangedAt.getTime() / 1000);
+    if (decoded.iat < changedAt) {
+      return next(AppError.unauthorized("Password changed. Please log in again."));
+    }
+  }
+
+  req.user = user;
+  next();
+});
+
+// Role-based authorization
+export const authorize = (...roles) => (req, res, next) => {
+  if (!roles.includes(req.user.role)) {
+    return next(AppError.forbidden(`Role '${req.user.role}' is not authorized for this action`));
+  }
+  next();
+};
+
+// Optional auth — sets req.user if token present, but doesn't fail
+export const optionalAuth = async (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(" ")[1];
+    if (token) {
+      const decoded = verifyToken(token);
+      req.user = await User.findById(decoded.id).select("-password");
+    }
+  } catch (_) { /* ignore — user stays undefined */ }
+  next();
+};
+```
+
+---
+
+### 11.3 Password Reset Flow
+
+```js
+// Request password reset
+export const forgotPassword = catchAsync(async (req, res, next) => {
+  const user = await User.findOne({ email: req.body.email });
+  if (!user) return next(AppError.notFound("No user with that email"));
+
+  // Generate reset token
+  const resetToken  = crypto.randomBytes(32).toString("hex");
+  const hashedToken = crypto.createHash("sha256").update(resetToken).digest("hex");
+
+  user.passwordResetToken   = hashedToken;
+  user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+  await user.save({ validateBeforeSave: false });
+
+  // Send email
+  const resetURL = `${req.protocol}://${req.get("host")}/api/v1/auth/reset-password/${resetToken}`;
+  await sendEmail({ to: user.email, subject: "Password Reset", text: `Reset: ${resetURL}` });
+
+  res.json({ success: true, message: "Reset link sent to email" });
+});
+
+// Reset password
+export const resetPassword = catchAsync(async (req, res, next) => {
+  const hashedToken = crypto.createHash("sha256").update(req.params.token).digest("hex");
+
+  const user = await User.findOne({
+    passwordResetToken:   hashedToken,
+    passwordResetExpires: { $gt: Date.now() }
+  });
+
+  if (!user) return next(new AppError("Token is invalid or expired", 400));
+
+  user.password             = await bcrypt.hash(req.body.password, 12);
+  user.passwordResetToken   = undefined;
+  user.passwordResetExpires = undefined;
+  user.passwordChangedAt    = new Date();
+  await user.save();
+
+  const accessToken = signToken({ id: user._id, role: user.role });
+  res.json({ success: true, accessToken });
+});
+```
+
+---
+
+## 12. File Uploads & Static Files
+
+### 12.1 Multer — File Uploads
+
+```bash
+npm install multer
+```
+
+```js
+// middleware/upload.js
+import multer  from "multer";
+import path    from "path";
+import { AppError } from "../utils/AppError.js";
+
+// Memory storage (for cloud upload)
+export const memoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 },  // 5MB
+  fileFilter: (req, file, cb) => {
+    const allowed = /jpeg|jpg|png|gif|webp/;
+    const extOk   = allowed.test(path.extname(file.originalname).toLowerCase());
+    const mimeOk  = allowed.test(file.mimetype);
+    extOk && mimeOk ? cb(null, true) : cb(new AppError("Only images allowed", 400));
+  }
+});
+
+// Disk storage (save locally)
+const diskStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./uploads/");
+  },
+  filename: (req, file, cb) => {
+    const uniqueName = `${Date.now()}-${Math.round(Math.random() * 1e9)}${path.extname(file.originalname)}`;
+    cb(null, uniqueName);
+  }
+});
+
+export const diskUpload = multer({
+  storage: diskStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },  // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ["image/jpeg", "image/png", "application/pdf"];
+    allowed.includes(file.mimetype) ? cb(null, true) : cb(new AppError("File type not allowed", 400));
+  }
+});
+```
+
+```js
+// routes/uploadRoutes.js
+import { Router }  from "express";
+import { memoryUpload, diskUpload } from "../middleware/upload.js";
+
+const router = Router();
+
+// Single file
+router.post("/avatar", memoryUpload.single("avatar"), async (req, res) => {
+  const buffer = req.file.buffer;       // for memory storage
+  const mime   = req.file.mimetype;
+
+  // Upload to S3/Cloudinary...
+  const url = await uploadToCloudinary(buffer, { resource_type: "image" });
+  await User.findByIdAndUpdate(req.user.id, { avatar: url });
+  res.json({ success: true, avatar: url });
+});
+
+// Multiple files (up to 5)
+router.post("/gallery", diskUpload.array("images", 5), async (req, res) => {
+  const files = req.files.map(f => `/uploads/${f.filename}`);
+  res.json({ success: true, files });
+});
+
+// Mixed fields
+router.post("/product", diskUpload.fields([
+  { name: "thumbnail", maxCount: 1 },
+  { name: "gallery",   maxCount: 10 }
+]), async (req, res) => {
+  const thumbnail = req.files["thumbnail"][0];
+  const gallery   = req.files["gallery"] || [];
+  res.json({ thumbnail: thumbnail.filename, gallery: gallery.map(f => f.filename) });
+});
+
+export default router;
+```
+
+---
+
+## 13. Database Integration
+
+### 13.1 MongoDB with Mongoose
+
+```js
+// config/database.js
+import mongoose from "mongoose";
+
+let isConnected = false;
+
+export const connectMongoDB = async () => {
+  if (isConnected) return;
+
+  mongoose.set("strictQuery", true);
+
+  const conn = await mongoose.connect(process.env.MONGO_URI, {
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000
+  });
+
+  isConnected = true;
+  console.log(`MongoDB Connected: ${conn.connection.host}`);
+
+  // Connection events
+  mongoose.connection.on("error",        err  => console.error("Mongoose error:", err));
+  mongoose.connection.on("disconnected", ()   => { isConnected = false; connectMongoDB(); });
+};
+```
+
+### 13.2 PostgreSQL with `pg`
+
+```bash
+npm install pg
+```
+
+```js
+// config/postgres.js
+import pg from "pg";
+
+const pool = new pg.Pool({
+  host:     process.env.PG_HOST,
+  port:     +process.env.PG_PORT || 5432,
+  database: process.env.PG_DATABASE,
+  user:     process.env.PG_USER,
+  password: process.env.PG_PASSWORD,
+  max:      20,       // connection pool size
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000
+});
+
+pool.on("error", (err) => console.error("Unexpected Postgres error:", err));
+
+// Query helper with parameterized queries (prevents SQL injection)
+export const query = (text, params) => pool.query(text, params);
+
+export const getClient = () => pool.connect();
+
+// Transaction helper
+export const withTransaction = async (callback) => {
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+    const result = await callback(client);
+    await client.query("COMMIT");
+    return result;
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+};
+
+export default pool;
+```
+
+```js
+// Using the PostgreSQL helper
+import { query, withTransaction } from "../config/postgres.js";
+
+// Parameterized query (safe from SQL injection)
+const getUser = async (id) => {
+  const { rows } = await query("SELECT * FROM users WHERE id = $1", [id]);
+  return rows[0];
+};
+
+const createOrder = async (userId, items, total) => {
+  return withTransaction(async (client) => {
+    const { rows: [order] } = await client.query(
+      "INSERT INTO orders (user_id, total) VALUES ($1, $2) RETURNING *",
+      [userId, total]
+    );
+
+    for (const item of items) {
+      await client.query(
+        "INSERT INTO order_items (order_id, product_id, qty, price) VALUES ($1, $2, $3, $4)",
+        [order.id, item.productId, item.qty, item.price]
+      );
+      await client.query(
+        "UPDATE products SET stock = stock - $1 WHERE id = $2",
+        [item.qty, item.productId]
+      );
+    }
+
+    return order;
+  });
+};
+```
+
+---
+
+## 14. Validation & Sanitization
+
+```bash
+npm install express-validator
+```
+
+```js
+// middleware/validators.js
+import { body, param, query, validationResult } from "express-validator";
+
+// Middleware to check validation results
+export const validate = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).json({
+      success: false,
+      message: "Validation failed",
+      errors: errors.array().map(e => ({ field: e.path, message: e.msg }))
+    });
+  }
+  next();
+};
+
+// User validators
+export const validateRegister = [
+  body("name")
+    .trim()
+    .notEmpty().withMessage("Name is required")
+    .isLength({ min: 2, max: 50 }).withMessage("Name must be 2-50 characters")
+    .matches(/^[a-zA-Z\s]+$/).withMessage("Name must contain only letters"),
+
+  body("email")
+    .trim()
+    .normalizeEmail()
+    .notEmpty().withMessage("Email is required")
+    .isEmail().withMessage("Must be a valid email"),
+
+  body("password")
+    .notEmpty().withMessage("Password is required")
+    .isLength({ min: 8 }).withMessage("Password must be at least 8 characters")
+    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/).withMessage("Password must contain uppercase, lowercase, and number"),
+
+  body("confirmPassword")
+    .custom((value, { req }) => {
+      if (value !== req.body.password) throw new Error("Passwords do not match");
+      return true;
+    }),
+
+  validate
+];
+
+// Product validators
+export const validateProduct = [
+  body("name").trim().notEmpty().isLength({ min: 3, max: 100 }),
+  body("price").isFloat({ min: 0 }).withMessage("Price must be a positive number"),
+  body("category").isIn(["Electronics", "Clothing", "Books", "Food", "Other"]),
+  body("stock").isInt({ min: 0 }),
+  body("tags").optional().isArray(),
+  body("tags.*").isString().trim(),
+  validate
+];
+
+// ID param validator
+export const validateObjectId = [
+  param("id").isMongoId().withMessage("Invalid ID format"),
+  validate
+];
+
+// Query validators for pagination
+export const validatePagination = [
+  query("page").optional().isInt({ min: 1 }),
+  query("limit").optional().isInt({ min: 1, max: 100 }),
+  query("sort").optional().isString(),
+  validate
+];
+```
+
+```js
+// Usage in routes
+router.post("/register", validateRegister, register);
+router.post("/products", authenticate, authorize("admin"), validateProduct, createProduct);
+router.get("/products/:id", validateObjectId, getProductById);
+```
+
+---
+
+## 15. Environment Configuration
+
+```bash
+npm install dotenv
+```
+
+```
+# .env (never commit to version control!)
+NODE_ENV=development
+PORT=3000
+MONGO_URI=mongodb://localhost:27017/shopdb
+JWT_SECRET=super-secret-key-change-in-production-64-chars-minimum
+JWT_EXPIRES_IN=7d
+JWT_REFRESH_SECRET=another-super-secret-for-refresh-tokens
+REDIS_URL=redis://localhost:6379
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=you@gmail.com
+SMTP_PASS=your-app-password
+CLIENT_URL=http://localhost:5173
+AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE
+AWS_SECRET_ACCESS_KEY=wJalrXUtnFEMI/K7MDENG
+AWS_S3_BUCKET=my-app-bucket
+```
+
+```js
+// config/config.js
+import { config as dotenvConfig } from "dotenv";
+dotenvConfig();
+
+const required = [
+  "NODE_ENV", "PORT", "MONGO_URI", "JWT_SECRET"
+];
+
+required.forEach(key => {
+  if (!process.env[key]) {
+    console.error(`FATAL: Missing required env variable: ${key}`);
+    process.exit(1);
+  }
+});
+
+export const config = {
+  env:     process.env.NODE_ENV,
+  port:    +process.env.PORT || 3000,
+  isDev:   process.env.NODE_ENV === "development",
+  isProd:  process.env.NODE_ENV === "production",
+
+  mongo: { uri: process.env.MONGO_URI },
+
+  jwt: {
+    secret:         process.env.JWT_SECRET,
+    expiresIn:      process.env.JWT_EXPIRES_IN || "7d",
+    refreshSecret:  process.env.JWT_REFRESH_SECRET,
+  },
+
+  redis: { url: process.env.REDIS_URL || "redis://localhost:6379" },
+
+  smtp: {
+    host: process.env.SMTP_HOST,
+    port: +process.env.SMTP_PORT || 587,
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS
+  },
+
+  aws: {
+    accessKeyId:     process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    bucket:          process.env.AWS_S3_BUCKET,
+    region:          process.env.AWS_REGION || "us-east-1"
+  },
+
+  client: { url: process.env.CLIENT_URL }
+};
+```
+
+---
+
+## 16. Logging
+
+```bash
+npm install winston winston-daily-rotate-file morgan
+```
+
+```js
+// utils/logger.js
+import winston from "winston";
+import DailyRotateFile from "winston-daily-rotate-file";
+import { config } from "../config/config.js";
+
+const { combine, timestamp, printf, colorize, json, errors } = winston.format;
+
+// Custom format for console
+const consoleFormat = combine(
+  colorize({ all: true }),
+  timestamp({ format: "YYYY-MM-DD HH:mm:ss" }),
+  errors({ stack: true }),
+  printf(({ level, message, timestamp, stack, ...meta }) => {
+    let log = `${timestamp} [${level}]: ${message}`;
+    if (Object.keys(meta).length) log += ` ${JSON.stringify(meta)}`;
+    if (stack) log += `\n${stack}`;
+    return log;
+  })
+);
+
+// File transport — rotates daily, keeps 14 days
+const fileTransport = new DailyRotateFile({
+  filename:    "logs/%DATE%-app.log",
+  datePattern: "YYYY-MM-DD",
+  maxFiles:    "14d",
+  maxSize:     "20m",
+  format:      combine(timestamp(), errors({ stack: true }), json())
+});
+
+// Error file transport
+const errorTransport = new DailyRotateFile({
+  filename:    "logs/%DATE%-error.log",
+  datePattern: "YYYY-MM-DD",
+  maxFiles:    "30d",
+  level:       "error",
+  format:      combine(timestamp(), errors({ stack: true }), json())
+});
+
+export const logger = winston.createLogger({
+  level: config.isDev ? "debug" : "info",
+  transports: [
+    new winston.transports.Console({ format: consoleFormat }),
+    fileTransport,
+    errorTransport
+  ]
+});
+
+// HTTP request logger stream for Morgan
+export const morganStream = {
+  write: (message) => logger.http(message.trim())
+};
+```
+
+```js
+// app.js — integrate Morgan with Winston
+import morgan from "morgan";
+import { logger, morganStream } from "./utils/logger.js";
+
+app.use(morgan(config.isDev ? "dev" : "combined", { stream: morganStream }));
+
+// Use logger throughout app
+logger.info("Server starting...");
+logger.error("Database connection failed", { error: err.message });
+logger.debug("Query result", { count: results.length });
+logger.warn("Rate limit approaching", { ip: req.ip });
+```
+
+---
+
+## 17. Testing (Unit + Integration)
+
+```bash
+npm install --save-dev jest supertest @types/jest
+```
+
+```json
+// package.json
+{
+  "jest": {
+    "testEnvironment": "node",
+    "coverageDirectory": "coverage",
+    "collectCoverageFrom": ["src/**/*.js"],
+    "testMatch": ["**/__tests__/**/*.js", "**/*.test.js"]
+  }
+}
+```
+
+### 17.1 Unit Testing
+
+```js
+// __tests__/unit/utils.test.js
+import { ApiResponse } from "../../utils/apiResponse.js";
+import { AppError }    from "../../utils/AppError.js";
+
+describe("AppError", () => {
+  it("should create an error with correct statusCode", () => {
+    const err = new AppError("Not found", 404);
+    expect(err.message).toBe("Not found");
+    expect(err.statusCode).toBe(404);
+    expect(err.status).toBe("fail");
+    expect(err.isOperational).toBe(true);
+  });
+
+  it("should mark 5xx errors as 'error' status", () => {
+    const err = new AppError("Server error", 500);
+    expect(err.status).toBe("error");
+  });
+
+  it("should use factory methods", () => {
+    const err = AppError.notFound("User not found");
+    expect(err.statusCode).toBe(404);
+    expect(err.message).toBe("User not found");
+  });
+});
+```
+
+### 17.2 Integration Testing
+
+```js
+// __tests__/integration/auth.test.js
+import request from "supertest";
+import mongoose from "mongoose";
+import app from "../../src/app.js";
+import User from "../../src/models/User.js";
+
+beforeAll(async () => {
+  await mongoose.connect(process.env.MONGO_URI_TEST);
+});
+
+afterEach(async () => {
+  await User.deleteMany({});   // clean between tests
+});
+
+afterAll(async () => {
+  await mongoose.connection.close();
+});
+
+describe("POST /api/v1/auth/register", () => {
+  const validUser = {
+    name: "Test User",
+    email: "test@example.com",
+    password: "Test@1234",
+    confirmPassword: "Test@1234"
+  };
+
+  it("should register a new user and return token", async () => {
+    const res = await request(app)
+      .post("/api/v1/auth/register")
+      .send(validUser);
+
+    expect(res.statusCode).toBe(201);
+    expect(res.body.success).toBe(true);
+    expect(res.body.accessToken).toBeDefined();
+    expect(res.body.user.email).toBe(validUser.email);
+    expect(res.body.user.password).toBeUndefined(); // never return password
+  });
+
+  it("should return 409 if email already exists", async () => {
+    await request(app).post("/api/v1/auth/register").send(validUser);
+    const res = await request(app).post("/api/v1/auth/register").send(validUser);
+
+    expect(res.statusCode).toBe(409);
+  });
+
+  it("should return 422 for invalid email", async () => {
+    const res = await request(app)
+      .post("/api/v1/auth/register")
+      .send({ ...validUser, email: "not-an-email" });
+
+    expect(res.statusCode).toBe(422);
+    expect(res.body.errors).toBeInstanceOf(Array);
+  });
+});
+
+describe("GET /api/v1/users", () => {
+  let token;
+
+  beforeEach(async () => {
+    // Register and login to get a token
+    const res = await request(app)
+      .post("/api/v1/auth/login")
+      .send({ email: "admin@example.com", password: "Admin@123" });
+    token = res.body.accessToken;
+  });
+
+  it("should require authentication", async () => {
+    const res = await request(app).get("/api/v1/users");
+    expect(res.statusCode).toBe(401);
+  });
+
+  it("should return users for authenticated admin", async () => {
+    const res = await request(app)
+      .get("/api/v1/users")
+      .set("Authorization", `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body.data).toBeInstanceOf(Array);
+  });
+});
+```
+
+---
+
+## 18. Security Best Practices
+
+```bash
+npm install helmet cors express-rate-limit express-mongo-sanitize xss hpp
+```
+
+```js
+// security setup
+import helmet               from "helmet";
+import cors                 from "cors";
+import mongoSanitize        from "express-mongo-sanitize";
+import xss                  from "xss-clean";
+import hpp                  from "hpp";
+import rateLimit            from "express-rate-limit";
+
+// ─── Helmet — HTTP Security Headers ─────────────────────────────────
+app.use(helmet());
+
+// ─── CORS ────────────────────────────────────────────────────────────
+app.use(cors({
+  origin: (origin, callback) => {
+    const whitelist = process.env.ALLOWED_ORIGINS?.split(",") || [];
+    if (!origin || whitelist.includes(origin)) callback(null, true);
+    else callback(new Error("Not allowed by CORS"));
+  },
+  credentials: true
+}));
+
+// ─── Rate Limiting ───────────────────────────────────────────────────
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,   // 15 minutes
+  max: 100,                    // max 100 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: "Too many requests. Try again later." }
+});
+
+const authLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,   // 1 hour
+  max: 10,                     // 10 login attempts per hour
+  message: { success: false, message: "Too many login attempts." }
+});
+
+app.use("/api", globalLimiter);
+app.use("/api/v1/auth/login",    authLimiter);
+app.use("/api/v1/auth/register", authLimiter);
+
+// ─── Body Size Limit ─────────────────────────────────────────────────
+app.use(express.json({ limit: "10kb" }));
+
+// ─── MongoDB Query Injection Prevention ──────────────────────────────
+// Strips $ and . from req.body, req.params, req.query
+app.use(mongoSanitize());
+
+// ─── XSS Protection ──────────────────────────────────────────────────
+// Sanitizes user input for HTML characters
+app.use(xss());
+
+// ─── HTTP Parameter Pollution ────────────────────────────────────────
+// Prevents: ?sort=name&sort=email (only last one kept)
+app.use(hpp({
+  whitelist: ["price", "rating", "tags"]  // allow arrays for these
+}));
+
+// ─── Remove X-Powered-By ─────────────────────────────────────────────
+app.disable("x-powered-by");
+
+// ─── HTTPS Enforcement (in production) ───────────────────────────────
+app.use((req, res, next) => {
+  if (config.isProd && !req.secure) {
+    return res.redirect(301, `https://${req.headers.host}${req.url}`);
+  }
+  next();
+});
+```
+
+---
+
+## 19. Performance Optimization
+
+### 19.1 Caching with Redis
+
+```bash
+npm install redis
+```
+
+```js
+// utils/cache.js
+import { createClient } from "redis";
+import { logger }       from "./logger.js";
+
+const client = createClient({ url: process.env.REDIS_URL });
+client.on("error", err => logger.error("Redis error:", err));
+await client.connect();
+
+export const cache = {
+  async get(key) {
+    const data = await client.get(key);
+    return data ? JSON.parse(data) : null;
+  },
+
+  async set(key, value, ttl = 3600) {  // default 1 hour
+    await client.setEx(key, ttl, JSON.stringify(value));
+  },
+
+  async del(key) { await client.del(key); },
+
+  async delPattern(pattern) {
+    const keys = await client.keys(pattern);
+    if (keys.length) await client.del(keys);
+  },
+
+  // Cache-aside wrapper
+  async wrap(key, fn, ttl = 3600) {
+    const cached = await this.get(key);
+    if (cached !== null) return cached;
+    const data = await fn();
+    await this.set(key, data, ttl);
+    return data;
+  }
+};
+```
+
+```js
+// Cache middleware for routes
+export const cacheResponse = (ttl = 60, keyFn = null) => async (req, res, next) => {
+  const key = keyFn ? keyFn(req) : `cache:${req.originalUrl}`;
+  const cached = await cache.get(key);
+
+  if (cached) {
+    res.setHeader("X-Cache", "HIT");
+    return res.json(cached);
+  }
+
+  res.setHeader("X-Cache", "MISS");
+
+  // Override res.json to also cache the response
+  const originalJson = res.json.bind(res);
+  res.json = (data) => {
+    if (res.statusCode === 200) cache.set(key, data, ttl);
+    return originalJson(data);
+  };
+
+  next();
+};
+
+// Usage
+router.get("/products", cacheResponse(300), getAllProducts);  // cache 5 min
+router.get("/products/:id", cacheResponse(600, req => `product:${req.params.id}`), getProductById);
+```
+
+---
+
+### 19.2 Compression
+
+```js
+import compression from "compression";
+
+app.use(compression({
+  level: 6,           // balanced speed vs compression
+  threshold: 1024,    // skip if response < 1KB
+  filter: (req, res) => {
+    if (req.headers["x-no-compression"]) return false;
+    return compression.filter(req, res);
+  }
+}));
+```
+
+---
+
+### 19.3 Connection Pooling & Keep-Alive
+
+```js
+// Configure server keep-alive
+const server = app.listen(PORT);
+server.keepAliveTimeout  = 65 * 1000;  // slightly above load balancer timeout
+server.headersTimeout    = 66 * 1000;
+
+// HTTP agent for outgoing requests (reuse connections)
+import https from "https";
+const agent = new https.Agent({ keepAlive: true, maxSockets: 50 });
+
+// Use with fetch
+const response = await fetch(url, { agent });
+```
+
+---
+
+### 19.4 Database Query Optimization
+
+```js
+// ✅ Use lean() for read-only operations
+const users = await User.find({ role: "user" }).lean();
+
+// ✅ Select only needed fields
+const users = await User.find().select("name email -_id").lean();
+
+// ✅ Use countDocuments instead of .find().length
+const count = await User.countDocuments({ role: "admin" });
+
+// ✅ Use cursor for processing large datasets (no RAM overload)
+const cursor = User.find({ isActive: true }).cursor();
+for await (const user of cursor) {
+  await processUser(user);
+}
+
+// ✅ Avoid N+1 queries — use populate or aggregation
+// ❌ N+1 problem:
+const orders = await Order.find();
+for (const order of orders) {
+  order.user = await User.findById(order.userId); // N extra queries!
+}
+
+// ✅ Correct:
+const orders = await Order.find().populate("userId", "name email");
+```
+
+---
+
+### 19.5 Load Testing
+
+```bash
+npm install -g autocannon
+autocannon -c 100 -d 30 http://localhost:3000/api/v1/products
+```
+
+---
+
+## 20. Clustering & Worker Threads
+
+### 20.1 Cluster Mode — Use All CPU Cores
+
+```js
+// cluster.js
+import cluster from "cluster";
+import { cpus } from "os";
+import { logger } from "./utils/logger.js";
+
+const NUM_WORKERS = cpus().length;
+
+if (cluster.isPrimary) {
+  logger.info(`Primary process ${process.pid} started`);
+  logger.info(`Forking ${NUM_WORKERS} workers...`);
+
+  for (let i = 0; i < NUM_WORKERS; i++) {
+    cluster.fork();
+  }
+
+  cluster.on("exit", (worker, code, signal) => {
+    logger.warn(`Worker ${worker.process.pid} died (${signal || code}). Restarting...`);
+    cluster.fork();   // restart dead worker
+  });
+
+  cluster.on("online", (worker) => {
+    logger.info(`Worker ${worker.process.pid} is online`);
+  });
+
+} else {
+  // Each worker runs the Express app
+  import("./src/app.js");
+  logger.info(`Worker ${process.pid} started`);
+}
+```
+
+### 20.2 Worker Threads — CPU-Intensive Tasks
+
+```js
+// workers/imageProcessor.js
+import { workerData, parentPort } from "worker_threads";
+import sharp from "sharp";
+
+const { imagePath, width, height } = workerData;
+
+const result = await sharp(imagePath)
+  .resize(width, height)
+  .toBuffer();
+
+parentPort.postMessage({ success: true, buffer: result });
+```
+
+```js
+// Using the worker thread
+import { Worker } from "worker_threads";
+
+const processImageAsync = (imagePath, width, height) => {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker("./workers/imageProcessor.js", {
+      workerData: { imagePath, width, height }
+    });
+
+    worker.on("message", resolve);
+    worker.on("error",   reject);
+    worker.on("exit", (code) => {
+      if (code !== 0) reject(new Error(`Worker exited with code ${code}`));
+    });
+  });
+};
+
+// Now CPU-intensive image processing doesn't block the event loop
+app.post("/resize", async (req, res) => {
+  const result = await processImageAsync("./input.jpg", 800, 600);
+  res.send(result.buffer);
+});
+```
+
+---
+
+## 21. WebSockets with Socket.io
+
+```bash
+npm install socket.io
+```
+
+```js
+// socket/index.js
+import { Server } from "socket.io";
+import { verifyToken } from "../utils/jwt.js";
+import User from "../models/User.js";
+
+export const initializeSocket = (httpServer) => {
+  const io = new Server(httpServer, {
+    cors: { origin: process.env.CLIENT_URL, credentials: true },
+    pingTimeout: 60000
+  });
+
+  // Auth middleware for socket connections
+  io.use(async (socket, next) => {
+    try {
+      const token = socket.handshake.auth.token || socket.handshake.headers.authorization?.split(" ")[1];
+      if (!token) return next(new Error("Authentication required"));
+
+      const decoded = verifyToken(token);
+      socket.user   = await User.findById(decoded.id).select("-password");
+      next();
+    } catch (err) {
+      next(new Error("Invalid token"));
+    }
+  });
+
+  io.on("connection", (socket) => {
+    console.log(`User connected: ${socket.user.name} [${socket.id}]`);
+
+    // Join a room
+    socket.on("join:room", (roomId) => {
+      socket.join(roomId);
+      socket.to(roomId).emit("user:joined", { userId: socket.user.id, name: socket.user.name });
+    });
+
+    // Chat message
+    socket.on("message:send", async ({ roomId, message }) => {
+      const msg = await Message.create({
+        room: roomId, sender: socket.user.id, content: message
+      });
+
+      io.to(roomId).emit("message:receive", {
+        id:      msg._id,
+        sender:  { id: socket.user.id, name: socket.user.name },
+        content: message,
+        time:    msg.createdAt
+      });
+    });
+
+    // Typing indicators
+    socket.on("typing:start", ({ roomId }) => {
+      socket.to(roomId).emit("typing:start", { userId: socket.user.id, name: socket.user.name });
+    });
+    socket.on("typing:stop",  ({ roomId }) => {
+      socket.to(roomId).emit("typing:stop", { userId: socket.user.id });
+    });
+
+    // Disconnect
+    socket.on("disconnect", () => {
+      console.log(`User disconnected: ${socket.user.name}`);
+      io.emit("user:offline", { userId: socket.user.id });
+    });
+  });
+
+  return io;
+};
+```
+
+```js
+// app.js — attach socket.io
+import { createServer } from "http";
+import { initializeSocket } from "./socket/index.js";
+
+const httpServer = createServer(app);
+export const io  = initializeSocket(httpServer);
+httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Emit from anywhere in the app
+import { io } from "../app.js";
+io.to(roomId).emit("order:updated", updatedOrder);
+```
+
+---
+
+## 22. Caching with Redis
+
+### 22.1 Session Storage
+
+```bash
+npm install express-session connect-redis
+```
+
+```js
+import session      from "express-session";
+import connectRedis from "connect-redis";
+import { client as redisClient } from "./config/redis.js";
+
+const RedisStore = connectRedis(session);
+
+app.use(session({
+  store:  new RedisStore({ client: redisClient }),
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure:   config.isProd,
+    httpOnly: true,
+    maxAge:   7 * 24 * 60 * 60 * 1000  // 7 days
+  }
+}));
+```
+
+### 22.2 Job Queues with Bull
+
+```bash
+npm install bull
+```
+
+```js
+// queues/emailQueue.js
+import Bull from "bull";
+import { sendEmail } from "../utils/email.js";
+import { logger }    from "../utils/logger.js";
+
+const emailQueue = new Bull("email", { redis: process.env.REDIS_URL });
+
+// Define job processors
+emailQueue.process("welcome", async (job) => {
+  await sendEmail({ to: job.data.email, subject: "Welcome!", template: "welcome", data: job.data });
+});
+
+emailQueue.process("order-confirmation", async (job) => {
+  await sendEmail({ to: job.data.email, subject: `Order #${job.data.orderId} confirmed`, data: job.data });
+});
+
+// Event listeners
+emailQueue.on("completed", (job) => logger.info(`Email job ${job.id} completed`));
+emailQueue.on("failed",    (job, err) => logger.error(`Email job ${job.id} failed:`, err.message));
+
+// Add jobs from anywhere
+export const queueWelcomeEmail = (userData) =>
+  emailQueue.add("welcome", userData, { attempts: 3, backoff: { type: "exponential", delay: 2000 } });
+
+export const queueOrderEmail   = (orderData) =>
+  emailQueue.add("order-confirmation", orderData, { delay: 1000 });
+```
+
+---
+
+## 23. Rate Limiting & Throttling
+
+```js
+// Advanced rate limiting with Redis
+import rateLimit   from "express-rate-limit";
+import RedisStore  from "rate-limit-redis";
+import { client }  from "./config/redis.js";
+
+const createLimiter = (options) => rateLimit({
+  windowMs:        options.windowMs || 15 * 60 * 1000,
+  max:             options.max      || 100,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  store:           new RedisStore({ sendCommand: (...args) => client.sendCommand(args) }),
+  keyGenerator:    options.keyGenerator || ((req) => req.ip),
+  skip:            options.skip,
+  message:         options.message || { success: false, message: "Too many requests" },
+  handler:         (req, res) => res.status(429).json(options.message || { success: false, message: "Rate limit exceeded" })
+});
+
+// Different limiters for different routes
+export const globalLimiter  = createLimiter({ windowMs: 15 * 60 * 1000, max: 100 });
+export const authLimiter    = createLimiter({ windowMs: 60 * 60 * 1000, max: 10,  message: { success: false, message: "Too many auth attempts" } });
+export const uploadLimiter  = createLimiter({ windowMs: 60 * 60 * 1000, max: 20 });
+export const apiKeyLimiter  = createLimiter({ windowMs: 60 * 1000,      max: 1000, keyGenerator: (req) => req.headers["x-api-key"] || req.ip });
+
+// Dynamic rate limiting based on user role
+export const dynamicLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: (req) => req.user?.role === "premium" ? 500 : req.user ? 100 : 20,
+  standardHeaders: true
+});
+```
+
+---
+
+## 24. Real-World Project Structure
+
+```
+my-api/
+├── src/
+│   ├── app.js                  ← Express app setup
+│   ├── index.js                ← Entry point (start server)
+│   │
+│   ├── config/
+│   │   ├── config.js           ← Environment variables
+│   │   ├── database.js         ← MongoDB connection
+│   │   └── redis.js            ← Redis connection
+│   │
+│   ├── controllers/
+│   │   ├── authController.js
+│   │   ├── userController.js
+│   │   └── productController.js
+│   │
+│   ├── models/
+│   │   ├── User.js
+│   │   ├── Product.js
+│   │   └── Order.js
+│   │
+│   ├── routes/
+│   │   ├── index.js            ← Route aggregator
+│   │   ├── authRoutes.js
+│   │   ├── userRoutes.js
+│   │   └── productRoutes.js
+│   │
+│   ├── middleware/
+│   │   ├── auth.js             ← JWT auth & RBAC
+│   │   ├── validators.js       ← express-validator
+│   │   ├── upload.js           ← Multer
+│   │   ├── cache.js            ← Cache middleware
+│   │   ├── rateLimiter.js
+│   │   └── errorHandler.js
+│   │
+│   ├── services/
+│   │   ├── emailService.js
+│   │   ├── storageService.js   ← S3 / Cloudinary
+│   │   └── paymentService.js   ← Stripe
+│   │
+│   ├── utils/
+│   │   ├── AppError.js
+│   │   ├── apiResponse.js
+│   │   ├── catchAsync.js
+│   │   ├── logger.js
+│   │   ├── jwt.js
+│   │   └── cache.js
+│   │
+│   ├── queues/
+│   │   └── emailQueue.js
+│   │
+│   └── socket/
+│       └── index.js
+│
+├── __tests__/
+│   ├── unit/
+│   └── integration/
+│
+├── scripts/
+│   ├── seed.js
+│   └── migrate.js
+│
+├── logs/                        ← gitignored
+├── uploads/                     ← gitignored
+├── .env                         ← gitignored
+├── .env.example
+├── .gitignore
+├── .eslintrc.js
+├── package.json
+└── README.md
+```
+
+```js
+// src/app.js — full application setup
+import express      from "express";
+import helmet       from "helmet";
+import cors         from "cors";
+import morgan       from "morgan";
+import compression  from "compression";
+import cookieParser from "cookie-parser";
+import mongoSanitize from "express-mongo-sanitize";
+import xss          from "xss-clean";
+import hpp          from "hpp";
+
+import { config }         from "./config/config.js";
+import router             from "./routes/index.js";
+import { globalErrorHandler } from "./middleware/errorHandler.js";
+import { requestId, requestTimer } from "./middleware/custom.js";
+import { globalLimiter }  from "./middleware/rateLimiter.js";
+import { morganStream }   from "./utils/logger.js";
+import { AppError }       from "./utils/AppError.js";
+
+const app = express();
+
+// ─── Trust proxy (for Nginx/load balancer) ─────────────────────────
+app.set("trust proxy", 1);
+
+// ─── Security ──────────────────────────────────────────────────────
+app.use(helmet());
+app.use(cors({ origin: config.client.url, credentials: true }));
+app.use(mongoSanitize());
+app.use(xss());
+app.use(hpp({ whitelist: ["price", "tags", "rating"] }));
+
+// ─── Rate Limiting ─────────────────────────────────────────────────
+app.use("/api", globalLimiter);
+
+// ─── Body Parsing ──────────────────────────────────────────────────
+app.use(express.json({ limit: "10kb" }));
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser(config.session?.secret));
+
+// ─── Compression ───────────────────────────────────────────────────
+app.use(compression());
+
+// ─── Logging ───────────────────────────────────────────────────────
+app.use(morgan(config.isDev ? "dev" : "combined", { stream: morganStream }));
+app.use(requestId);
+app.use(requestTimer);
+
+// ─── Static Files ──────────────────────────────────────────────────
+app.use("/uploads", express.static("uploads", { maxAge: "1d" }));
+
+// ─── Routes ────────────────────────────────────────────────────────
+app.use("/api/v1", router);
+
+// ─── Health Check ──────────────────────────────────────────────────
+app.get("/health", (req, res) => res.json({ status: "ok", uptime: process.uptime() }));
+
+// ─── 404 Handler ───────────────────────────────────────────────────
+app.all("*", (req, res, next) => next(new AppError(`Route ${req.originalUrl} not found`, 404)));
+
+// ─── Global Error Handler ──────────────────────────────────────────
+app.use(globalErrorHandler);
+
+export default app;
+```
+
+---
+
+## 25. Deployment & Production Checklist
+
+### 25.1 PM2 — Process Manager
+
+```bash
+npm install -g pm2
+```
+
+```js
+// ecosystem.config.js
+export default {
+  apps: [{
+    name:         "my-api",
+    script:       "src/index.js",
+    instances:    "max",          // use all CPU cores
+    exec_mode:    "cluster",
+    watch:        false,
+    max_memory_restart: "500M",
+    env: {
+      NODE_ENV: "production",
+      PORT: 3000
+    },
+    log_file:     "logs/combined.log",
+    out_file:     "logs/out.log",
+    error_file:   "logs/error.log",
+    log_date_format: "YYYY-MM-DD HH:mm:ss",
+    restart_delay: 3000,
+    max_restarts:  10
+  }]
+};
+```
+
+```bash
+pm2 start ecosystem.config.js      # start
+pm2 list                           # show processes
+pm2 logs my-api                    # view logs
+pm2 monit                          # real-time monitoring
+pm2 restart my-api                 # restart
+pm2 reload my-api                  # zero-downtime reload
+pm2 save                           # save process list
+pm2 startup                        # auto-start on reboot
+```
+
+---
+
+### 25.2 Docker
+
+```dockerfile
+# Dockerfile
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --only=production
+
+FROM node:20-alpine
+WORKDIR /app
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+COPY --from=builder /app/node_modules ./node_modules
+COPY . .
+RUN chown -R appuser:appgroup /app
+USER appuser
+EXPOSE 3000
+CMD ["node", "src/index.js"]
+```
+
+```yaml
+# docker-compose.yml
+version: "3.9"
+services:
+  api:
+    build: .
+    ports: ["3000:3000"]
+    env_file: .env
+    depends_on: [mongo, redis]
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    volumes: [mongo_data:/data/db]
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    volumes: [redis_data:/data]
+    restart: unless-stopped
+
+  nginx:
+    image: nginx:alpine
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on: [api]
+    restart: unless-stopped
+
+volumes:
+  mongo_data:
+  redis_data:
+```
+
+---
+
+### 25.3 Nginx Reverse Proxy
+
+```nginx
+# nginx.conf
+events { worker_connections 1024; }
+
+http {
+  upstream api {
+    server api:3000;
+    keepalive 32;
+  }
+
+  server {
+    listen 80;
+    server_name api.example.com;
+    return 301 https://$server_name$request_uri;
+  }
+
+  server {
+    listen 443 ssl http2;
+    server_name api.example.com;
+
+    ssl_certificate     /etc/nginx/ssl/fullchain.pem;
+    ssl_certificate_key /etc/nginx/ssl/privkey.pem;
+    ssl_protocols       TLSv1.2 TLSv1.3;
+    ssl_ciphers         HIGH:!aNULL:!MD5;
+
+    location / {
+      proxy_pass         http://api;
+      proxy_http_version 1.1;
+      proxy_set_header   Upgrade $http_upgrade;
+      proxy_set_header   Connection 'upgrade';
+      proxy_set_header   Host $host;
+      proxy_set_header   X-Real-IP $remote_addr;
+      proxy_set_header   X-Forwarded-For $proxy_add_x_forwarded_for;
+      proxy_set_header   X-Forwarded-Proto $scheme;
+      proxy_cache_bypass $http_upgrade;
+      proxy_read_timeout 90;
+    }
+
+    location /socket.io/ {
+      proxy_pass         http://api;
+      proxy_http_version 1.1;
+      proxy_set_header   Upgrade $http_upgrade;
+      proxy_set_header   Connection "upgrade";
+    }
+  }
+}
+```
+
+---
+
+### 25.4 Production Checklist
+
+```
+Security:
+  ✅ Environment variables secured (never in code)
+  ✅ Helmet middleware enabled
+  ✅ Rate limiting on all public routes
+  ✅ CORS properly configured
+  ✅ Input validation & sanitization
+  ✅ SQL/NoSQL injection prevention
+  ✅ XSS protection
+  ✅ HTTPS only
+  ✅ Passwords hashed with bcrypt (cost factor ≥ 12)
+  ✅ JWT secrets are strong and rotated
+  ✅ npm audit clean
+
+Performance:
+  ✅ Gzip compression enabled
+  ✅ Static assets cached
+  ✅ Redis caching for expensive queries
+  ✅ Database indexes created
+  ✅ Connection pooling configured
+  ✅ PM2 cluster mode (or Kubernetes)
+  ✅ CDN for static assets
+
+Reliability:
+  ✅ Health check endpoint (/health)
+  ✅ Graceful shutdown implemented
+  ✅ Unhandled rejection & exception handling
+  ✅ Structured logging with Winston
+  ✅ Error monitoring (Sentry/DataDog)
+  ✅ Database backups automated
+  ✅ Docker / containerized
+
+Observability:
+  ✅ Request IDs on all logs
+  ✅ Response time tracking
+  ✅ Error rate monitoring
+  ✅ Memory & CPU alerts set
+  ✅ Uptime monitoring (Uptime Robot / PagerDuty)
+```
+
+---
+
+## Summary Cheat Sheet
+
+```
+Node.js Async Patterns:
+  Callbacks     → oldest, error-first convention
+  Promises      → chainable, .then/.catch/.finally
+  Async/Await   → cleanest, built on Promises
+  Streams       → chunk-by-chunk for large data
+  EventEmitter  → pub/sub pattern
+
+Express.js Flow:
+  Request → Middleware pipeline → Route handler → Response
+
+Common HTTP Status Codes:
+  200 OK            → success
+  201 Created       → resource created
+  204 No Content    → success with no body
+  400 Bad Request   → validation error
+  401 Unauthorized  → not authenticated
+  403 Forbidden     → not authorized
+  404 Not Found     → resource doesn't exist
+  409 Conflict      → duplicate/conflict
+  422 Unprocessable → semantic validation failure
+  429 Too Many      → rate limited
+  500 Server Error  → unexpected error
+
+Performance Quick Wins:
+  → Enable gzip compression
+  → Use Redis for caching
+  → Use lean() for Mongoose read queries
+  → Add proper DB indexes
+  → Use Promise.all for parallel async work
+  → Use cluster mode / PM2 for multi-core
+  → Stream large files instead of buffering
+```
+
+---
+
+*Node.js and Express.js give you the building blocks — architecture, patterns, and discipline turn them into production systems. Start simple, add complexity only when you need it, and always measure before optimizing.*

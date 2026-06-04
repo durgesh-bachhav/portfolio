@@ -113,7 +113,7 @@ export default async function BlogPage({
                 />
             </div>
             <div className="relative z-10">
-                <div className="max-w-5xl mx-auto px-4 border-x border-[#e2d6c5] dark:border-[#3a332a]">
+                <div className="max-w-7xl mx-auto px-4 border-x border-[#e2d6c5] dark:border-[#3a332a]">
                     <section className="border-b border-[#e2d6c5] dark:border-[#3a332a]">
                         <GridSection className="py-16 px-8 space-y-6">
                             <div className="flex flex-col gap-2">

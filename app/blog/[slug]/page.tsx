@@ -67,7 +67,7 @@ export default async function BlogPost({ params }: PageProps) {
       </div>
 
       <div className="space-y-4 border-b border-[#e2d6c5] dark:border-[#3a332a] relative z-10">
-        <div className="max-w-6xl mx-auto flex flex-col gap-6 p-6 border-x border-[#e2d6c5] dark:border-[#3a332a]">
+        <div className="max-w-7xl mx-auto flex flex-col gap-6 p-6 border-x border-[#e2d6c5] dark:border-[#3a332a]">
           <div className="flex flex-wrap items-center gap-3 gap-y-5 text-sm text-[#7a6a58] dark:text-[#b7a48f]">
             <Button
               variant="outline"
@@ -107,8 +107,8 @@ export default async function BlogPost({ params }: PageProps) {
           )}
         </div>
       </div>
-      <div className="flex divide-x divide-[#e2d6c5] dark:divide-[#3a332a] relative max-w-6xl mx-auto px-4 md:px-0 z-10">
-        <div className="absolute max-w-6xl mx-auto left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] lg:w-full h-full border-x border-[#e2d6c5] dark:border-[#3a332a] p-0 pointer-events-none" />
+      <div className="flex divide-x divide-[#e2d6c5] dark:divide-[#3a332a] relative max-w-7xl mx-auto px-4 md:px-0 z-10">
+        <div className="absolute max-w-7xl mx-auto left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] lg:w-full h-full border-x border-[#e2d6c5] dark:border-[#3a332a] p-0 pointer-events-none" />
         <main className="w-full p-0 overflow-hidden">
           {page.data.thumbnail && (
             <div className="relative w-full h-[500px] overflow-hidden object-cover border-b border-[#e2d6c5] dark:border-[#3a332a]">

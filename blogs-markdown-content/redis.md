@@ -1,0 +1,803 @@
+# Redis Complete Guide for Backend Developers
+
+## Introduction
+
+Redis (Remote Dictionary Server) is an open-source, in-memory data structure store used as a:
+
+* Cache
+* Database
+* Message Broker
+* Queue System
+* Session Store
+* Real-Time Data Store
+
+Redis is one of the most widely used technologies in modern backend systems because it provides extremely fast read and write operations.
+
+Companies such as Netflix, Uber, Airbnb, Twitter, GitHub, and Stack Overflow use Redis heavily in their infrastructure.
+
+---
+
+# Why Redis Was Created
+
+Imagine an application where every request directly hits MongoDB or MySQL.
+
+Example:
+
+User opens dashboard.
+
+Application Flow:
+
+User → API → Database → Response
+
+If thousands of users request the same data repeatedly, the database becomes overloaded.
+
+Problems:
+
+* High database load
+* Slow response time
+* Increased server costs
+* Poor user experience
+
+Redis solves this problem by keeping frequently accessed data in RAM.
+
+New Flow:
+
+User → API → Redis
+
+If data exists:
+
+Redis → Response
+
+Otherwise:
+
+Redis → Database → Redis → Response
+
+This reduces database traffic dramatically.
+
+---
+
+# Why Redis is Fast
+
+Traditional databases store data on disk.
+
+Disk Access:
+
+* HDD: milliseconds
+* SSD: microseconds to milliseconds
+
+Redis stores data in memory (RAM).
+
+RAM access is significantly faster than disk access.
+
+Approximate Latency:
+
+RAM: nanoseconds
+
+SSD: microseconds
+
+HDD: milliseconds
+
+Because Redis keeps data in memory:
+
+* Reads are extremely fast
+* Writes are extremely fast
+* Millions of operations per second are possible
+
+This is the primary reason Redis became popular.
+
+---
+
+# Redis Architecture
+
+Basic Architecture
+
+Client
+↓
+Redis Server
+↓
+Memory (RAM)
+
+Redis operates primarily as a single-threaded event-driven server.
+
+Benefits:
+
+* No thread synchronization overhead
+* No race conditions inside command execution
+* Predictable performance
+
+Redis 6+ introduced optional multithreading for networking operations, but command execution remains largely single-threaded.
+
+---
+
+# Understanding Redis Keys
+
+Everything in Redis is stored using keys.
+
+Example:
+
+user:1:name
+
+user:1:email
+
+product:500
+
+order:1001
+
+Key naming conventions are extremely important.
+
+Good:
+
+user:100
+
+user:100:profile
+
+user:100:wallet
+
+Bad:
+
+abc
+
+temp1
+
+data
+
+Descriptive keys improve maintainability.
+
+---
+
+# Redis Data Types
+
+Redis is much more than simple key-value storage.
+
+---
+
+## Strings
+
+Most common datatype.
+
+Store:
+
+* Text
+* Numbers
+* JSON
+* Tokens
+
+Example:
+
+SET username "Durgesh"
+
+GET username
+
+Output:
+
+Durgesh
+
+Increment value:
+
+SET visitors 100
+
+INCR visitors
+
+Output:
+
+101
+
+Common Uses:
+
+* Counters
+* OTPs
+* API tokens
+* Cache entries
+
+---
+
+## Hashes
+
+Hashes store objects.
+
+Example:
+
+HSET user:1 name Durgesh email [durgesh@gmail.com](mailto:durgesh@gmail.com) age 25
+
+Retrieve:
+
+HGETALL user:1
+
+Output:
+
+name: Durgesh
+
+email: [durgesh@gmail.com](mailto:durgesh@gmail.com)
+
+age: 25
+
+Common Uses:
+
+* User profiles
+* Product information
+* Configuration storage
+
+---
+
+## Lists
+
+Ordered collection.
+
+Example:
+
+LPUSH notifications "Order Created"
+
+LPUSH notifications "Payment Received"
+
+Retrieve:
+
+LRANGE notifications 0 -1
+
+Output:
+
+Payment Received
+
+Order Created
+
+Common Uses:
+
+* Notification queues
+* Task processing
+* Recent activity feeds
+
+---
+
+## Sets
+
+Stores unique values.
+
+Example:
+
+SADD online_users 101
+
+SADD online_users 102
+
+SADD online_users 101
+
+Duplicate values are ignored.
+
+Common Uses:
+
+* Online user tracking
+* Permissions
+* Tags
+* Followers
+
+---
+
+## Sorted Sets
+
+Stores value with score.
+
+Example:
+
+ZADD leaderboard 100 Durgesh
+
+ZADD leaderboard 200 Rahul
+
+Retrieve rankings:
+
+ZRANGE leaderboard 0 -1 WITHSCORES
+
+Common Uses:
+
+* Leaderboards
+* XP Systems
+* Gaming rankings
+* Top users
+
+---
+
+# Expiration and TTL
+
+One of Redis's most powerful features.
+
+Store OTP:
+
+SET otp:9876543210 123456 EX 300
+
+Meaning:
+
+Expire automatically after 5 minutes.
+
+Check remaining time:
+
+TTL otp:9876543210
+
+Benefits:
+
+* Automatic cleanup
+* No cron jobs required
+* Reduced database growth
+
+Common Use Cases:
+
+* OTPs
+* Sessions
+* Temporary links
+* Password reset tokens
+
+---
+
+# Redis Persistence
+
+Redis stores data in memory.
+
+Question:
+
+What happens if Redis server crashes?
+
+Redis supports persistence.
+
+---
+
+## RDB (Snapshot)
+
+Redis periodically saves snapshots.
+
+Example:
+
+Save every 5 minutes.
+
+Pros:
+
+* Fast recovery
+* Compact backups
+
+Cons:
+
+* Some recent data may be lost
+
+---
+
+## AOF (Append Only File)
+
+Every command is logged.
+
+Example:
+
+SET user 1
+
+SET balance 100
+
+All operations are replayed during recovery.
+
+Pros:
+
+* Better durability
+
+Cons:
+
+* Larger storage usage
+
+Most production systems combine RDB and AOF.
+
+---
+
+# Redis Caching
+
+Caching is Redis's most common use case.
+
+Without Cache:
+
+Request
+
+↓
+
+Database
+
+↓
+
+Response
+
+Every request queries database.
+
+With Redis:
+
+Request
+
+↓
+
+Redis
+
+↓
+
+Found?
+
+Yes → Return
+
+No
+
+↓
+
+Database
+
+↓
+
+Redis
+
+↓
+
+Return
+
+Benefits:
+
+* Faster APIs
+* Lower database load
+* Better scalability
+
+---
+
+# Cache Aside Pattern
+
+Most common caching strategy.
+
+Process:
+
+1. Check Redis
+2. If cache miss → query database
+3. Save result in Redis
+4. Return response
+
+Example:
+
+const cache = await redis.get(key)
+
+if(cache){
+return JSON.parse(cache)
+}
+
+const data = await User.findById(id)
+
+await redis.set(
+key,
+JSON.stringify(data),
+'EX',
+300
+)
+
+return data
+
+Advantages:
+
+* Easy implementation
+* Reduced database load
+
+---
+
+# Session Management
+
+Instead of storing sessions in memory:
+
+Store in Redis.
+
+Example:
+
+SET session:user123 token EX 86400
+
+Benefits:
+
+* Shared across servers
+* Supports horizontal scaling
+* Fast validation
+
+Used heavily in:
+
+* Authentication
+* Login systems
+* JWT management
+
+---
+
+# Rate Limiting
+
+Protect APIs against abuse.
+
+Example:
+
+Maximum 100 requests per minute.
+
+Redis tracks request count.
+
+INCR api:user123
+
+EXPIRE api:user123 60
+
+If count > 100
+
+Block request.
+
+Common Uses:
+
+* Login APIs
+* Public APIs
+* Payment APIs
+
+---
+
+# Redis Pub/Sub
+
+Redis can act as a message broker.
+
+Publisher:
+
+PUBLISH chat "Hello"
+
+Subscriber:
+
+SUBSCRIBE chat
+
+Message is instantly delivered.
+
+Common Uses:
+
+* Chat applications
+* Notifications
+* Event systems
+
+Limitation:
+
+Messages are not stored.
+
+If subscriber is offline, message is lost.
+
+---
+
+# Redis Streams
+
+More advanced than Pub/Sub.
+
+Advantages:
+
+* Persistent messages
+* Consumer groups
+* Message acknowledgements
+
+Used in:
+
+* Event-driven architecture
+* Microservices
+* Order processing
+
+---
+
+# Job Queues
+
+Background processing is a major Redis use case.
+
+Example:
+
+User uploads CSV.
+
+Instead of processing immediately:
+
+Upload
+
+↓
+
+Queue
+
+↓
+
+Worker
+
+↓
+
+Process CSV
+
+Benefits:
+
+* Faster response
+* Better reliability
+* Retry support
+
+Popular Libraries:
+
+* Bull
+* BullMQ
+* Bee Queue
+
+---
+
+# Distributed Locking
+
+Prevent duplicate processing.
+
+Example:
+
+Two workers process same order.
+
+Acquire lock:
+
+SET lock:order123 true NX EX 30
+
+Only one worker succeeds.
+
+Used in:
+
+* Payment systems
+* Inventory systems
+* Order processing
+
+---
+
+# Redis in Microservices
+
+Microservices often use Redis for:
+
+* Shared cache
+* Message communication
+* Distributed locks
+* Rate limiting
+* Session storage
+
+Redis becomes a central infrastructure component.
+
+---
+
+# Redis Memory Optimization
+
+Best Practices:
+
+Use short keys.
+
+Avoid storing huge objects.
+
+Compress large JSON.
+
+Delete unused keys.
+
+Set expiration whenever possible.
+
+Monitor memory regularly.
+
+---
+
+# Redis Monitoring Commands
+
+Memory Usage:
+
+INFO memory
+
+Connected Clients:
+
+INFO clients
+
+Server Stats:
+
+INFO stats
+
+All Information:
+
+INFO
+
+Slow Queries:
+
+SLOWLOG GET
+
+---
+
+# Redis Security
+
+Never expose Redis publicly.
+
+Always:
+
+* Enable authentication
+* Use firewalls
+* Restrict network access
+* Enable TLS where possible
+
+Bad:
+
+0.0.0.0:6379 open to internet
+
+Good:
+
+Internal network only
+
+---
+
+# Common Production Use Cases
+
+1. Dashboard Caching
+
+2. API Response Caching
+
+3. Session Storage
+
+4. OTP Storage
+
+5. Rate Limiting
+
+6. Leaderboards
+
+7. Job Queues
+
+8. Chat Applications
+
+9. Real-Time Notifications
+
+10. Distributed Locks
+
+11. Event Streaming
+
+12. Blockchain Indexing
+
+13. User Activity Tracking
+
+14. Shopping Cart Storage
+
+15. Recommendation Systems
+
+---
+
+# Redis Interview Questions
+
+What is Redis?
+
+An in-memory data structure store used for caching, messaging, queues, sessions, and real-time applications.
+
+Why is Redis fast?
+
+Because it stores data in RAM instead of disk.
+
+What is TTL?
+
+Time To Live. It automatically removes keys after a specified duration.
+
+Difference between Redis and MongoDB?
+
+Redis focuses on speed and caching.
+
+MongoDB focuses on persistent document storage and querying.
+
+What is Pub/Sub?
+
+A messaging model where publishers send messages and subscribers receive them in real time.
+
+What is Cache Aside Pattern?
+
+Application checks Redis first, then database on cache miss.
+
+What are Redis Streams?
+
+Persistent message queues with consumer groups.
+
+What is Distributed Locking?
+
+A mechanism to ensure only one process performs a critical operation at a time.
+
+---
+
+# Final Thoughts
+
+Redis is not a replacement for MongoDB or MySQL.
+
+Think of Redis as a high-speed layer sitting between your application and your database.
+
+Database = Source of Truth
+
+Redis = Speed Layer
+
+For modern backend engineers, Redis knowledge is almost as important as understanding databases because nearly every large-scale system uses caching, queues, rate limiting, sessions, or real-time messaging.
+
+
+
+After mastering this guide, the next topics I recommend for a senior backend engineer are:
+
+Redis + Node.js (ioredis)
+Redis Caching Patterns
+BullMQ Complete Guide
+Redis Pub/Sub vs Streams
+Redis Sentinel
+Redis Cluster
+Distributed Locking (Redlock)
+System Design with Redis
+Redis in Kubernetes
+Redis for Blockchain Indexers

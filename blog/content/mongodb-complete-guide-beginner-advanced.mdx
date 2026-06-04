@@ -1,0 +1,1822 @@
+---
+title: "MongoDB: The Complete Guide — Beginner to Advanced"
+description: "A deep-dive into MongoDB covering core concepts, raw MongoDB shell queries, and Mongoose ODM — with real-world examples at every level."
+date: "2026-06-04"
+tags:
+  [
+    "MongoDB",
+    "Database",
+    "Mongoose",
+    "Backend",
+    "MERN Stack",
+  ]
+featured: true
+readTime: "35 min read"
+author: "durgesh"
+thumbnail: "/thumbnails/mongodb-guide.png"
+---
+
+> A deep-dive into MongoDB covering core concepts, raw MongoDB shell queries, and Mongoose ODM — with real-world examples at every level.
+
+---
+
+## Table of Contents
+
+1. [What is MongoDB?](#1-what-is-mongodb)
+2. [Installation & Setup](#2-installation--setup)
+3. [Core Concepts](#3-core-concepts)
+4. [CRUD Operations — Raw MongoDB](#4-crud-operations--raw-mongodb)
+5. [CRUD Operations — Mongoose](#5-crud-operations--mongoose)
+6. [Schema Design & Relationships](#6-schema-design--relationships)
+7. [Query Operators](#7-query-operators)
+8. [Aggregation Pipeline](#8-aggregation-pipeline)
+9. [Indexes](#9-indexes)
+10. [Transactions](#10-transactions)
+11. [Advanced Mongoose Patterns](#11-advanced-mongoose-patterns)
+12. [Performance & Best Practices](#12-performance--best-practices)
+13. [Real-World Project Example](#13-real-world-project-example)
+
+---
+
+## 1. What is MongoDB?
+
+MongoDB is a **document-oriented NoSQL database** that stores data as flexible, JSON-like documents (called BSON — Binary JSON). Unlike relational databases, MongoDB doesn't require a fixed schema — each document in a collection can have a different structure.
+
+### Why MongoDB?
+
+| Feature | MongoDB | SQL Database |
+|---|---|---|
+| Data format | BSON Documents | Rows & Columns |
+| Schema | Flexible / Dynamic | Rigid / Fixed |
+| Scaling | Horizontal (sharding) | Vertical (mostly) |
+| Joins | Embedded docs / `$lookup` | Native JOINs |
+| Transactions | Multi-document (v4+) | Full ACID |
+| Query Language | MQL (MongoDB Query Language) | SQL |
+
+### When to use MongoDB?
+
+- Applications with **rapidly changing data models**
+- **Hierarchical / nested data** (e.g., user profiles with arrays of addresses)
+- High-volume **read/write workloads**
+- Real-time analytics, catalogs, content management, IoT data
+
+---
+
+## 2. Installation & Setup
+
+### Install MongoDB Community Edition (Ubuntu/macOS)
+
+```bash
+# macOS (Homebrew)
+brew tap mongodb/brew
+brew install mongodb-community@7.0
+brew services start mongodb-community@7.0
+
+# Ubuntu
+wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/7.0 multiverse" \
+  | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+sudo apt-get update && sudo apt-get install -y mongodb-org
+sudo systemctl start mongod
+```
+
+### Connect via MongoDB Shell (mongosh)
+
+```bash
+mongosh                          # connects to localhost:27017
+mongosh "mongodb://localhost:27017/mydb"
+mongosh "mongodb+srv://user:pass@cluster.mongodb.net/mydb"  # Atlas
+```
+
+### Node.js Project Setup
+
+```bash
+mkdir mongo-project && cd mongo-project
+npm init -y
+npm install mongodb mongoose dotenv
+```
+
+```js
+// .env
+MONGO_URI=mongodb://localhost:27017/shopdb
+```
+
+---
+
+## 3. Core Concepts
+
+### Hierarchy
+
+```
+MongoDB Server
+  └── Databases          (e.g., shopdb, blogdb)
+        └── Collections  (like tables — e.g., users, products)
+              └── Documents (JSON objects — e.g., { name: "Alice" })
+```
+
+### Documents
+
+Documents are BSON objects. Every document automatically gets a unique `_id` field (ObjectId by default).
+
+```json
+{
+  "_id": ObjectId("64f3a1b2c9e77b001f3e4d21"),
+  "name": "Alice Johnson",
+  "email": "alice@example.com",
+  "age": 29,
+  "address": {
+    "city": "New York",
+    "zip": "10001"
+  },
+  "tags": ["developer", "blogger"],
+  "createdAt": ISODate("2024-01-15T10:30:00Z")
+}
+```
+
+### BSON Data Types
+
+| Type | Example |
+|---|---|
+| String | `"hello"` |
+| Integer | `42` |
+| Double | `3.14` |
+| Boolean | `true` / `false` |
+| ObjectId | `ObjectId("...")` |
+| Array | `[1, 2, 3]` |
+| Embedded Doc | `{ city: "NY" }` |
+| Date | `ISODate("2024-01-01")` |
+| Null | `null` |
+| Binary | `BinData(...)` |
+
+---
+
+## 4. CRUD Operations — Raw MongoDB
+
+All raw queries below run in **mongosh** (MongoDB shell).
+
+### Setup: Switch Database & Collection
+
+```js
+use shopdb                // create/switch to database
+db                        // shows current db
+show dbs                  // list all databases
+show collections          // list all collections
+```
+
+---
+
+### 4.1 INSERT (Create)
+
+#### Insert One Document
+
+```js
+db.users.insertOne({
+  name: "Alice Johnson",
+  email: "alice@example.com",
+  age: 29,
+  role: "admin",
+  createdAt: new Date()
+})
+// Returns: { acknowledged: true, insertedId: ObjectId("...") }
+```
+
+#### Insert Many Documents
+
+```js
+db.users.insertMany([
+  { name: "Bob Smith",   email: "bob@example.com",   age: 34, role: "user" },
+  { name: "Carol White", email: "carol@example.com", age: 27, role: "user" },
+  { name: "Dave Brown",  email: "dave@example.com",  age: 41, role: "moderator" }
+])
+```
+
+#### Insert with Nested Document and Array
+
+```js
+db.products.insertOne({
+  name: "Wireless Headphones",
+  price: 129.99,
+  category: "Electronics",
+  stock: 250,
+  specs: {
+    brand: "SoundMax",
+    color: "Black",
+    wireless: true,
+    batteryHours: 30
+  },
+  tags: ["audio", "wireless", "portable"],
+  reviews: [
+    { user: "Alice", rating: 5, comment: "Amazing sound!" },
+    { user: "Bob",   rating: 4, comment: "Good value." }
+  ],
+  createdAt: new Date()
+})
+```
+
+---
+
+### 4.2 FIND (Read)
+
+#### Find All
+
+```js
+db.users.find()                       // returns cursor
+db.users.find().pretty()              // formatted output (mongosh auto-prettifies)
+```
+
+#### Find with Filter
+
+```js
+// Exact match
+db.users.find({ role: "admin" })
+
+// Multiple conditions (implicit AND)
+db.users.find({ role: "user", age: 29 })
+
+// Find one document
+db.users.findOne({ email: "alice@example.com" })
+```
+
+#### Projection — Select Specific Fields
+
+```js
+// Include only name and email (1 = include, 0 = exclude)
+db.users.find({}, { name: 1, email: 1, _id: 0 })
+
+// Exclude a field
+db.users.find({}, { password: 0 })
+```
+
+#### Comparison Operators
+
+```js
+db.users.find({ age: { $gt: 30 } })           // age > 30
+db.users.find({ age: { $gte: 30 } })          // age >= 30
+db.users.find({ age: { $lt: 30 } })           // age < 30
+db.users.find({ age: { $lte: 30 } })          // age <= 30
+db.users.find({ age: { $eq: 29 } })           // age == 29
+db.users.find({ age: { $ne: 29 } })           // age != 29
+db.users.find({ age: { $in: [27, 29, 34] } }) // age in list
+db.users.find({ age: { $nin: [27, 34] } })    // age NOT in list
+db.users.find({ age: { $gt: 25, $lt: 40 } })  // 25 < age < 40
+```
+
+#### Logical Operators
+
+```js
+// AND
+db.users.find({ $and: [{ age: { $gt: 25 } }, { role: "user" }] })
+
+// OR
+db.users.find({ $or: [{ role: "admin" }, { role: "moderator" }] })
+
+// NOR — neither condition
+db.users.find({ $nor: [{ role: "admin" }, { age: { $lt: 25 } }] })
+
+// NOT
+db.users.find({ age: { $not: { $gt: 40 } } })
+```
+
+#### Query on Nested Documents
+
+```js
+// Dot notation for nested fields
+db.products.find({ "specs.brand": "SoundMax" })
+db.products.find({ "specs.batteryHours": { $gte: 20 } })
+```
+
+#### Query on Arrays
+
+```js
+// Array contains a value
+db.products.find({ tags: "wireless" })
+
+// Array contains ALL specified values
+db.products.find({ tags: { $all: ["wireless", "portable"] } })
+
+// Array element matches condition
+db.products.find({ "reviews.rating": { $gte: 4 } })
+
+// Array size
+db.products.find({ tags: { $size: 3 } })
+
+// elemMatch — all conditions match a SINGLE array element
+db.products.find({
+  reviews: { $elemMatch: { rating: 5, user: "Alice" } }
+})
+```
+
+#### Cursor Methods
+
+```js
+db.users.find().sort({ age: 1 })          // sort ascending (1) / descending (-1)
+db.users.find().sort({ age: -1, name: 1 })// multi-field sort
+db.users.find().limit(5)                  // first 5 documents
+db.users.find().skip(10).limit(5)         // pagination: page 3 (0-indexed)
+db.users.find().count()                   // total count (deprecated, use countDocuments)
+db.users.countDocuments({ role: "user" }) // preferred count
+db.users.find().sort({ age: 1 }).skip(10).limit(5) // chained
+```
+
+#### Text Search
+
+```js
+// First create a text index
+db.products.createIndex({ name: "text", description: "text" })
+
+// Then search
+db.products.find({ $text: { $search: "wireless headphones" } })
+db.products.find({ $text: { $search: "\"noise cancelling\"" } }) // exact phrase
+```
+
+---
+
+### 4.3 UPDATE
+
+#### Update One
+
+```js
+// $set — update/add fields
+db.users.updateOne(
+  { email: "alice@example.com" },          // filter
+  { $set: { age: 30, role: "superadmin" } } // update
+)
+```
+
+#### Update Many
+
+```js
+// Update all users with role "user" — add a "verified" flag
+db.users.updateMany(
+  { role: "user" },
+  { $set: { verified: true, updatedAt: new Date() } }
+)
+```
+
+#### Update Operators
+
+```js
+// $set — set field values
+db.users.updateOne({ name: "Bob" }, { $set: { age: 35 } })
+
+// $unset — remove a field
+db.users.updateOne({ name: "Bob" }, { $unset: { temporaryField: "" } })
+
+// $inc — increment/decrement
+db.products.updateOne({ name: "Wireless Headphones" }, { $inc: { stock: -1 } })
+db.users.updateOne({ name: "Alice" }, { $inc: { loginCount: 1 } })
+
+// $mul — multiply
+db.products.updateOne({ name: "Wireless Headphones" }, { $mul: { price: 1.10 } })
+
+// $rename — rename a field
+db.users.updateMany({}, { $rename: { "name": "fullName" } })
+
+// $min / $max — only update if new value is min/max
+db.products.updateOne({ name: "Headphones" }, { $min: { price: 99.99 } })
+
+// $currentDate — set to current date
+db.users.updateOne({ name: "Alice" }, { $currentDate: { updatedAt: true } })
+```
+
+#### Array Update Operators
+
+```js
+// $push — add to array
+db.products.updateOne(
+  { name: "Wireless Headphones" },
+  { $push: { tags: "bestseller" } }
+)
+
+// $push with $each — add multiple elements
+db.products.updateOne(
+  { name: "Wireless Headphones" },
+  { $push: { tags: { $each: ["featured", "sale"], $position: 0 } } }
+)
+
+// $addToSet — add only if not already present
+db.products.updateOne(
+  { name: "Wireless Headphones" },
+  { $addToSet: { tags: "wireless" } } // won't add duplicate
+)
+
+// $pull — remove matching elements from array
+db.products.updateOne(
+  { name: "Wireless Headphones" },
+  { $pull: { tags: "sale" } }
+)
+
+// $pop — remove first (-1) or last (1) element
+db.products.updateOne({ name: "Headphones" }, { $pop: { tags: -1 } })
+
+// Update element matching condition in array using $ positional operator
+db.products.updateOne(
+  { "reviews.user": "Alice" },
+  { $set: { "reviews.$.rating": 5 } }
+)
+```
+
+#### Upsert — Update or Insert
+
+```js
+// upsert: true creates the doc if not found
+db.users.updateOne(
+  { email: "newuser@example.com" },
+  { $set: { name: "New User", role: "user", createdAt: new Date() } },
+  { upsert: true }
+)
+```
+
+#### findOneAndUpdate — Return Document
+
+```js
+// Returns the document AFTER update (returnDocument: "after")
+db.users.findOneAndUpdate(
+  { email: "alice@example.com" },
+  { $inc: { loginCount: 1 } },
+  { returnDocument: "after", projection: { name: 1, loginCount: 1 } }
+)
+```
+
+---
+
+### 4.4 DELETE
+
+```js
+// Delete one
+db.users.deleteOne({ email: "bob@example.com" })
+
+// Delete many
+db.users.deleteMany({ role: "guest" })
+
+// Delete all documents in collection (keep collection)
+db.users.deleteMany({})
+
+// Drop the entire collection
+db.users.drop()
+
+// Drop the database
+db.dropDatabase()
+
+// findOneAndDelete — delete and return the document
+db.users.findOneAndDelete({ email: "carol@example.com" })
+```
+
+---
+
+## 5. CRUD Operations — Mongoose
+
+Mongoose is the most popular **ODM (Object Document Mapper)** for MongoDB in Node.js. It adds schema validation, middleware, virtuals, and a rich query API on top of the native driver.
+
+### 5.1 Connection Setup
+
+```js
+// db.js
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+dotenv.config();
+
+const connectDB = async () => {
+  try {
+    const conn = await mongoose.connect(process.env.MONGO_URI, {
+      // Options are not needed in Mongoose 6+ (all defaults are sane)
+    });
+    console.log(`MongoDB Connected: ${conn.connection.host}`);
+  } catch (error) {
+    console.error("Connection failed:", error.message);
+    process.exit(1);
+  }
+};
+
+// Connection events
+mongoose.connection.on("disconnected", () => console.log("MongoDB disconnected"));
+mongoose.connection.on("error", (err) => console.error("Mongoose error:", err));
+
+export default connectDB;
+```
+
+---
+
+### 5.2 Defining Schemas & Models
+
+```js
+// models/User.js
+import mongoose from "mongoose";
+
+const addressSchema = new mongoose.Schema({
+  street: String,
+  city:   String,
+  state:  String,
+  zip:    String,
+  country: { type: String, default: "US" }
+});
+
+const userSchema = new mongoose.Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Name is required"],
+      trim: true,
+      minlength: [2, "Name must be at least 2 characters"],
+      maxlength: [50, "Name cannot exceed 50 characters"]
+    },
+    email: {
+      type: String,
+      required: [true, "Email is required"],
+      unique: true,
+      lowercase: true,
+      match: [/^\S+@\S+\.\S+$/, "Please enter a valid email"]
+    },
+    password: {
+      type: String,
+      required: true,
+      minlength: 6,
+      select: false  // Never returned in queries by default
+    },
+    age: {
+      type: Number,
+      min: [0, "Age must be positive"],
+      max: [120, "Age seems invalid"]
+    },
+    role: {
+      type: String,
+      enum: ["user", "admin", "moderator"],
+      default: "user"
+    },
+    verified: {
+      type: Boolean,
+      default: false
+    },
+    address: addressSchema,          // Nested schema
+    tags: [String],                  // Array of strings
+    loginCount: { type: Number, default: 0 },
+    lastLogin: Date,
+    avatar: String,
+    bio: { type: String, maxlength: 500 }
+  },
+  {
+    timestamps: true,        // Adds createdAt, updatedAt automatically
+    versionKey: false        // Removes __v field
+  }
+);
+
+// Virtual — not stored in DB, computed on the fly
+userSchema.virtual("initials").get(function () {
+  return this.name.split(" ").map(n => n[0]).join("").toUpperCase();
+});
+
+// Instance method
+userSchema.methods.toPublicJSON = function () {
+  const obj = this.toObject();
+  delete obj.password;
+  return obj;
+};
+
+// Static method
+userSchema.statics.findByEmail = function (email) {
+  return this.findOne({ email: email.toLowerCase() });
+};
+
+// Pre-save middleware (hook)
+userSchema.pre("save", async function (next) {
+  if (this.isModified("password")) {
+    const bcrypt = await import("bcrypt");
+    this.password = await bcrypt.hash(this.password, 12);
+  }
+  next();
+});
+
+// Post-save middleware
+userSchema.post("save", function (doc) {
+  console.log(`User saved: ${doc.email}`);
+});
+
+const User = mongoose.model("User", userSchema);
+export default User;
+```
+
+---
+
+### 5.3 Product Model
+
+```js
+// models/Product.js
+import mongoose from "mongoose";
+
+const reviewSchema = new mongoose.Schema({
+  user:    { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  rating:  { type: Number, min: 1, max: 5, required: true },
+  comment: { type: String, maxlength: 500 },
+  date:    { type: Date, default: Date.now }
+});
+
+const productSchema = new mongoose.Schema(
+  {
+    name:     { type: String, required: true, trim: true },
+    slug:     { type: String, unique: true },
+    price:    { type: Number, required: true, min: 0 },
+    discount: { type: Number, default: 0, min: 0, max: 100 },
+    category: {
+      type: String,
+      required: true,
+      enum: ["Electronics", "Clothing", "Books", "Food", "Other"]
+    },
+    stock:    { type: Number, default: 0, min: 0 },
+    specs:    { type: Map, of: mongoose.Schema.Types.Mixed }, // flexible key-value
+    tags:     [String],
+    reviews:  [reviewSchema],
+    isActive: { type: Boolean, default: true },
+    seller:   { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+  },
+  { timestamps: true }
+);
+
+// Virtual: average rating
+productSchema.virtual("avgRating").get(function () {
+  if (!this.reviews.length) return 0;
+  return (this.reviews.reduce((sum, r) => sum + r.rating, 0) / this.reviews.length).toFixed(1);
+});
+
+// Virtual: discounted price
+productSchema.virtual("salePrice").get(function () {
+  return +(this.price * (1 - this.discount / 100)).toFixed(2);
+});
+
+// Auto-generate slug
+productSchema.pre("save", function (next) {
+  if (this.isModified("name")) {
+    this.slug = this.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  }
+  next();
+});
+
+const Product = mongoose.model("Product", productSchema);
+export default Product;
+```
+
+---
+
+### 5.4 INSERT with Mongoose
+
+```js
+import User from "./models/User.js";
+
+// Create with new + save
+const user = new User({
+  name: "Alice Johnson",
+  email: "alice@example.com",
+  password: "secret123",
+  age: 29,
+  role: "admin"
+});
+const saved = await user.save();
+console.log(saved._id);
+
+// Create shorthand
+const user2 = await User.create({
+  name: "Bob Smith",
+  email: "bob@example.com",
+  password: "pass456",
+  age: 34
+});
+
+// Insert Many
+const users = await User.insertMany([
+  { name: "Carol White", email: "carol@example.com", password: "abc123", age: 27 },
+  { name: "Dave Brown",  email: "dave@example.com",  password: "xyz789", age: 41 }
+]);
+```
+
+---
+
+### 5.5 FIND with Mongoose
+
+```js
+// Find all
+const allUsers = await User.find();
+
+// Find with filter
+const admins = await User.find({ role: "admin" });
+
+// Find one
+const alice = await User.findOne({ email: "alice@example.com" });
+const byId  = await User.findById("64f3a1b2c9e77b001f3e4d21");
+
+// Select fields (projection)
+const names = await User.find({}, "name email -_id");       // string shorthand
+const proj  = await User.find().select("name email -_id");  // chained
+
+// Sort, skip, limit
+const paginatedUsers = await User
+  .find({ role: "user" })
+  .sort({ createdAt: -1 })
+  .skip(0)
+  .limit(10)
+  .select("name email age");
+
+// Count
+const count = await User.countDocuments({ role: "user" });
+
+// Exists check
+const exists = await User.exists({ email: "alice@example.com" });
+// Returns { _id: ObjectId } or null
+
+// Comparison queries
+const olderUsers = await User.find({ age: { $gt: 30 } });
+const inRange    = await User.find({ age: { $gte: 25, $lte: 40 } });
+const adminsOrMods = await User.find({ role: { $in: ["admin", "moderator"] } });
+
+// Logical
+const results = await User.find({
+  $or: [{ role: "admin" }, { age: { $gt: 35 } }]
+});
+
+// Regex search
+const matched = await User.find({ name: /alice/i });       // case-insensitive
+const startsWith = await User.find({ name: /^Alice/ });
+
+// Lean — returns plain JS object (faster, no mongoose methods)
+const plainUsers = await User.find().lean();
+
+// Populate — join referenced documents
+const products = await Product.find()
+  .populate("seller", "name email")      // only name and email from User
+  .populate("reviews.user", "name");
+
+// Deep populate
+const orders = await Order.find()
+  .populate({
+    path: "user",
+    select: "name email",
+    populate: { path: "address" }
+  });
+```
+
+---
+
+### 5.6 UPDATE with Mongoose
+
+```js
+// findByIdAndUpdate — returns updated doc
+const updated = await User.findByIdAndUpdate(
+  "64f3a1b2c9e77b001f3e4d21",
+  { $set: { age: 30, role: "superadmin" } },
+  { new: true, runValidators: true }   // new: true returns updated doc
+);
+
+// findOneAndUpdate
+const updated2 = await User.findOneAndUpdate(
+  { email: "alice@example.com" },
+  { $inc: { loginCount: 1 }, $set: { lastLogin: new Date() } },
+  { new: true }
+);
+
+// updateOne / updateMany
+await User.updateOne({ email: "bob@example.com" }, { $set: { verified: true } });
+await User.updateMany({ role: "user" }, { $set: { verified: true } });
+
+// Upsert
+await User.findOneAndUpdate(
+  { email: "ghost@example.com" },
+  { $setOnInsert: { name: "Ghost", role: "user", createdAt: new Date() } },
+  { upsert: true, new: true }
+);
+
+// Bulk operations
+await User.bulkWrite([
+  { updateOne: { filter: { email: "alice@example.com" }, update: { $inc: { loginCount: 1 } } } },
+  { updateOne: { filter: { email: "bob@example.com" },   update: { $set: { verified: true } } } },
+  { insertOne: { document: { name: "Eve", email: "eve@example.com", password: "pass" } } },
+  { deleteOne: { filter: { email: "obsolete@example.com" } } }
+]);
+```
+
+---
+
+### 5.7 DELETE with Mongoose
+
+```js
+// Delete by ID
+await User.findByIdAndDelete("64f3a1b2c9e77b001f3e4d21");
+
+// Find one and delete (returns the document)
+const deleted = await User.findOneAndDelete({ email: "bob@example.com" });
+
+// deleteOne / deleteMany
+await User.deleteOne({ email: "carol@example.com" });
+await User.deleteMany({ verified: false, createdAt: { $lt: new Date("2023-01-01") } });
+```
+
+---
+
+## 6. Schema Design & Relationships
+
+MongoDB offers two primary ways to model relationships.
+
+### 6.1 Embedding (Denormalization)
+
+Best for **one-to-few** relationships where nested data is always read together.
+
+```js
+// Blog post with embedded comments
+const postSchema = new mongoose.Schema({
+  title:   String,
+  content: String,
+  author:  { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  comments: [
+    {
+      user:    String,
+      body:    String,
+      date:    { type: Date, default: Date.now },
+      likes:   { type: Number, default: 0 }
+    }
+  ]
+});
+```
+
+**Pros:** Single query to get all data. **Cons:** Document can grow large (16MB BSON limit).
+
+---
+
+### 6.2 Referencing (Normalization)
+
+Best for **one-to-many** or **many-to-many** where related data grows unboundedly.
+
+```js
+// Order referencing User and Product
+const orderSchema = new mongoose.Schema({
+  user:    { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  items: [
+    {
+      product:  { type: mongoose.Schema.Types.ObjectId, ref: "Product" },
+      quantity: { type: Number, default: 1 },
+      price:    Number   // snapshot price at time of order
+    }
+  ],
+  totalAmount: Number,
+  status: {
+    type: String,
+    enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+    default: "pending"
+  },
+  shippingAddress: {
+    street: String, city: String, state: String, zip: String
+  }
+}, { timestamps: true });
+
+const Order = mongoose.model("Order", orderSchema);
+
+// Fetch order with full user and product details
+const order = await Order.findById(orderId)
+  .populate("user", "name email")
+  .populate("items.product", "name price category");
+```
+
+---
+
+### 6.3 Many-to-Many — User ↔ Roles
+
+```js
+// Using a join model
+const userRoleSchema = new mongoose.Schema({
+  user: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+  role: { type: mongoose.Schema.Types.ObjectId, ref: "Role" },
+  assignedAt: { type: Date, default: Date.now }
+});
+
+// OR using arrays of references
+const userSchema = new mongoose.Schema({
+  name: String,
+  roles: [{ type: mongoose.Schema.Types.ObjectId, ref: "Role" }]
+});
+```
+
+---
+
+## 7. Query Operators
+
+### 7.1 Element Operators
+
+```js
+// Raw
+db.users.find({ bio: { $exists: true } })      // field exists
+db.users.find({ bio: { $exists: false } })     // field doesn't exist
+db.users.find({ age: { $type: "number" } })    // field is of type number
+db.users.find({ age: { $type: ["number", "null"] } })
+
+// Mongoose
+await User.find({ bio: { $exists: true } });
+await User.find({ age: { $type: "number" } });
+```
+
+### 7.2 Evaluation Operators
+
+```js
+// $regex — Regular expression
+// Raw
+db.users.find({ name: { $regex: "^Ali", $options: "i" } })
+
+// Mongoose
+await User.find({ name: { $regex: /^ali/i } });
+
+// $where — JavaScript expression (slow, avoid in production)
+db.users.find({ $where: "this.age > 25 && this.role === 'admin'" })
+
+// $expr — compare two fields within same document
+db.products.find({ $expr: { $gt: ["$stock", "$minStock"] } })
+
+// Mongoose $expr
+await Product.find({ $expr: { $gte: ["$stock", 10] } });
+```
+
+### 7.3 Array Operators Summary
+
+```js
+// Raw MongoDB
+db.products.find({ tags: { $all: ["wireless", "portable"] } })     // has all
+db.products.find({ tags: { $size: 3 } })                           // exact array size
+db.products.find({ tags: { $elemMatch: { $eq: "wireless" } } })    // element matches
+
+// Mongoose
+await Product.find({ tags: { $all: ["wireless", "portable"] } });
+await Product.find({ reviews: { $elemMatch: { rating: 5, user: "Alice" } } });
+```
+
+---
+
+## 8. Aggregation Pipeline
+
+The aggregation pipeline is MongoDB's **most powerful feature** — it processes documents through a sequence of stages, each transforming the data.
+
+```
+Collection ──► $match ──► $group ──► $sort ──► $project ──► Result
+```
+
+### 8.1 Basic Aggregation
+
+```js
+// Raw MongoDB
+db.orders.aggregate([
+  { $match: { status: "delivered" } },                           // filter
+  { $group: { _id: "$user", totalSpent: { $sum: "$totalAmount" }, orderCount: { $sum: 1 } } },
+  { $sort: { totalSpent: -1 } },                                 // sort by spending
+  { $limit: 10 }                                                 // top 10 customers
+])
+```
+
+```js
+// Mongoose
+const topCustomers = await Order.aggregate([
+  { $match: { status: "delivered" } },
+  { $group: {
+    _id: "$user",
+    totalSpent:  { $sum: "$totalAmount" },
+    orderCount:  { $sum: 1 },
+    avgOrderVal: { $avg: "$totalAmount" }
+  }},
+  { $sort: { totalSpent: -1 } },
+  { $limit: 10 },
+  { $lookup: {                   // JOIN with users collection
+    from: "users",
+    localField: "_id",
+    foreignField: "_id",
+    as: "userInfo"
+  }},
+  { $unwind: "$userInfo" },      // flatten the array
+  { $project: {
+    _id: 0,
+    name:        "$userInfo.name",
+    email:       "$userInfo.email",
+    totalSpent:  1,
+    orderCount:  1,
+    avgOrderVal: { $round: ["$avgOrderVal", 2] }
+  }}
+]);
+```
+
+---
+
+### 8.2 Common Pipeline Stages
+
+#### $match — Filter Documents
+
+```js
+{ $match: { status: "active", age: { $gte: 18 } } }
+```
+
+#### $group — Aggregate Data
+
+```js
+{
+  $group: {
+    _id: "$category",                         // group key
+    count:      { $sum: 1 },                  // count documents
+    totalSales: { $sum: "$price" },           // sum
+    avgPrice:   { $avg: "$price" },           // average
+    maxPrice:   { $max: "$price" },           // max
+    minPrice:   { $min: "$price" },           // min
+    allNames:   { $push: "$name" },           // collect into array
+    uniqueTags: { $addToSet: "$category" }    // unique values
+  }
+}
+```
+
+#### $project — Reshape Documents
+
+```js
+{
+  $project: {
+    name: 1,
+    email: 1,
+    _id: 0,
+    fullLabel:    { $concat: ["$name", " <", "$email", ">"] },
+    ageNextYear:  { $add: ["$age", 1] },
+    nameUpper:    { $toUpper: "$name" },
+    firstTag:     { $arrayElemAt: ["$tags", 0] },
+    tagCount:     { $size: "$tags" },
+    isAdult:      { $gte: ["$age", 18] }
+  }
+}
+```
+
+#### $lookup — Join Collections
+
+```js
+// Basic lookup
+{
+  $lookup: {
+    from: "products",          // collection to join
+    localField: "productId",   // field in current doc
+    foreignField: "_id",       // field in joined collection
+    as: "productDetails"       // output array field
+  }
+}
+
+// Lookup with pipeline (advanced filtering)
+{
+  $lookup: {
+    from: "reviews",
+    let: { productId: "$_id" },
+    pipeline: [
+      { $match: { $expr: { $eq: ["$product", "$$productId"] }, rating: { $gte: 4 } } },
+      { $sort: { date: -1 } },
+      { $limit: 5 }
+    ],
+    as: "topReviews"
+  }
+}
+```
+
+#### $unwind — Deconstruct Arrays
+
+```js
+// Flatten array — creates one document per array element
+{ $unwind: "$reviews" }
+
+// With options
+{
+  $unwind: {
+    path: "$reviews",
+    preserveNullAndEmptyArrays: true,   // keep docs with missing/empty array
+    includeArrayIndex: "reviewIndex"     // add the array index
+  }
+}
+```
+
+#### $addFields / $set — Add Computed Fields
+
+```js
+{
+  $addFields: {
+    totalWithTax: { $multiply: ["$price", 1.18] },
+    isExpensive:  { $gt: ["$price", 100] },
+    reviewCount:  { $size: "$reviews" }
+  }
+}
+```
+
+#### $bucket — Group into Ranges
+
+```js
+{
+  $bucket: {
+    groupBy: "$age",
+    boundaries: [0, 18, 30, 45, 60, 100],
+    default: "Other",
+    output: {
+      count: { $sum: 1 },
+      users: { $push: "$name" }
+    }
+  }
+}
+```
+
+#### $facet — Multiple Aggregations in One Pass
+
+```js
+{
+  $facet: {
+    byCategory: [
+      { $group: { _id: "$category", count: { $sum: 1 } } }
+    ],
+    priceStats: [
+      { $group: { _id: null, avg: { $avg: "$price" }, max: { $max: "$price" } } }
+    ],
+    totalCount: [
+      { $count: "total" }
+    ]
+  }
+}
+```
+
+---
+
+### 8.3 Real-World Aggregation Example
+
+```js
+// Sales dashboard: revenue by category per month
+const salesReport = await Order.aggregate([
+  // Step 1: Only delivered orders in current year
+  {
+    $match: {
+      status: "delivered",
+      createdAt: { $gte: new Date("2024-01-01") }
+    }
+  },
+  // Step 2: Unwind order items
+  { $unwind: "$items" },
+  // Step 3: Join with products
+  {
+    $lookup: {
+      from: "products",
+      localField: "items.product",
+      foreignField: "_id",
+      as: "productData"
+    }
+  },
+  { $unwind: "$productData" },
+  // Step 4: Group by month + category
+  {
+    $group: {
+      _id: {
+        month:    { $month: "$createdAt" },
+        year:     { $year: "$createdAt" },
+        category: "$productData.category"
+      },
+      revenue:   { $sum: { $multiply: ["$items.quantity", "$items.price"] } },
+      unitsSold: { $sum: "$items.quantity" }
+    }
+  },
+  // Step 5: Reshape
+  {
+    $project: {
+      _id: 0,
+      month:     "$_id.month",
+      year:      "$_id.year",
+      category:  "$_id.category",
+      revenue:   { $round: ["$revenue", 2] },
+      unitsSold: 1
+    }
+  },
+  { $sort: { year: 1, month: 1, category: 1 } }
+]);
+```
+
+---
+
+## 9. Indexes
+
+Indexes are data structures that MongoDB uses to find documents quickly. **Without an index, MongoDB performs a collection scan** (reads every document).
+
+### 9.1 Types of Indexes
+
+#### Single Field Index
+
+```js
+// Raw
+db.users.createIndex({ email: 1 })               // ascending
+db.users.createIndex({ createdAt: -1 })           // descending (for recent-first queries)
+db.users.createIndex({ email: 1 }, { unique: true }) // unique index
+
+// Mongoose — define in schema
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ createdAt: -1 });
+
+// Or using field-level shorthand
+email: { type: String, unique: true }  // creates index automatically
+```
+
+#### Compound Index
+
+```js
+// Useful for queries that filter on multiple fields
+// Raw
+db.products.createIndex({ category: 1, price: -1 })
+
+// Mongoose
+productSchema.index({ category: 1, price: -1 });
+
+// Covers queries like:
+await Product.find({ category: "Electronics" }).sort({ price: -1 });
+```
+
+#### Text Index
+
+```js
+// Raw — only ONE text index per collection
+db.products.createIndex({ name: "text", description: "text" }, { weights: { name: 10, description: 1 } })
+
+// Mongoose
+productSchema.index({ name: "text", description: "text" }, { weights: { name: 10 } });
+
+// Query
+await Product.find({ $text: { $search: "wireless headphones" } },
+                   { score: { $meta: "textScore" } })
+             .sort({ score: { $meta: "textScore" } });
+```
+
+#### Sparse Index — Skip Documents Missing the Field
+
+```js
+db.users.createIndex({ bio: 1 }, { sparse: true })
+// Doesn't index documents without a "bio" field — saves space
+```
+
+#### TTL Index — Auto-Delete Documents After Time
+
+```js
+// Documents auto-deleted 1 hour after "expiresAt" field value
+db.sessions.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
+
+// Or expire X seconds after document creation
+db.logs.createIndex({ createdAt: 1 }, { expireAfterSeconds: 86400 }) // 24h
+```
+
+#### Partial Index — Index a Subset
+
+```js
+// Only index active products — smaller index
+db.products.createIndex(
+  { price: 1 },
+  { partialFilterExpression: { isActive: true } }
+)
+```
+
+#### Multikey Index — Indexes on Arrays
+
+```js
+// MongoDB auto-creates multikey index when field is an array
+db.products.createIndex({ tags: 1 })
+// Now: db.products.find({ tags: "wireless" }) uses the index
+```
+
+---
+
+### 9.2 Managing Indexes
+
+```js
+// List all indexes
+db.users.getIndexes()
+
+// Drop a specific index by name
+db.users.dropIndex("email_1")
+
+// Drop all indexes (except _id)
+db.users.dropIndexes()
+
+// Explain query execution (check if index is used)
+db.users.find({ email: "alice@example.com" }).explain("executionStats")
+// Look for: "winningPlan.stage": "IXSCAN" (index used)
+// Avoid:    "winningPlan.stage": "COLLSCAN" (full scan)
+
+// Mongoose
+User.collection.getIndexes()
+```
+
+---
+
+## 10. Transactions
+
+MongoDB supports **multi-document ACID transactions** since v4.0 (replica sets) and v4.2 (sharded clusters).
+
+### 10.1 Raw MongoDB Transaction
+
+```js
+const session = client.startSession();
+session.startTransaction();
+
+try {
+  // Deduct stock
+  await db.collection("products").updateOne(
+    { _id: productId, stock: { $gte: quantity } },
+    { $inc: { stock: -quantity } },
+    { session }
+  );
+
+  // Create order
+  await db.collection("orders").insertOne(
+    { user: userId, product: productId, quantity, status: "pending" },
+    { session }
+  );
+
+  // Deduct wallet balance
+  await db.collection("users").updateOne(
+    { _id: userId, walletBalance: { $gte: totalAmount } },
+    { $inc: { walletBalance: -totalAmount } },
+    { session }
+  );
+
+  await session.commitTransaction();
+  console.log("Transaction committed.");
+} catch (error) {
+  await session.abortTransaction();
+  console.error("Transaction aborted:", error.message);
+  throw error;
+} finally {
+  session.endSession();
+}
+```
+
+### 10.2 Mongoose Transaction
+
+```js
+const session = await mongoose.startSession();
+
+try {
+  const result = await session.withTransaction(async () => {
+    // All operations share the same session
+    const product = await Product.findOneAndUpdate(
+      { _id: productId, stock: { $gte: quantity } },
+      { $inc: { stock: -quantity } },
+      { new: true, session }
+    );
+
+    if (!product) throw new Error("Insufficient stock");
+
+    const order = await Order.create([
+      {
+        user: userId,
+        items: [{ product: productId, quantity, price: product.price }],
+        totalAmount: product.price * quantity,
+        status: "pending"
+      }
+    ], { session });
+
+    await User.findByIdAndUpdate(
+      userId,
+      { $inc: { walletBalance: -(product.price * quantity) } },
+      { session }
+    );
+
+    return order[0];
+  });
+
+  console.log("Order created:", result._id);
+} catch (err) {
+  console.error("Transaction failed:", err.message);
+} finally {
+  session.endSession();
+}
+```
+
+---
+
+## 11. Advanced Mongoose Patterns
+
+### 11.1 Query Builder Pattern
+
+```js
+class UserQueryBuilder {
+  constructor() {
+    this.query = User.find();
+  }
+
+  withRole(role) {
+    this.query = this.query.where("role").equals(role);
+    return this;
+  }
+
+  olderThan(age) {
+    this.query = this.query.where("age").gt(age);
+    return this;
+  }
+
+  verified() {
+    this.query = this.query.where("verified").equals(true);
+    return this;
+  }
+
+  paginate(page = 1, limit = 10) {
+    this.query = this.query.skip((page - 1) * limit).limit(limit);
+    return this;
+  }
+
+  sortBy(field, order = "asc") {
+    this.query = this.query.sort({ [field]: order === "asc" ? 1 : -1 });
+    return this;
+  }
+
+  async execute() {
+    return this.query.lean().exec();
+  }
+}
+
+// Usage
+const users = await new UserQueryBuilder()
+  .withRole("user")
+  .verified()
+  .olderThan(25)
+  .sortBy("createdAt", "desc")
+  .paginate(2, 10)
+  .execute();
+```
+
+---
+
+### 11.2 Pagination Utility
+
+```js
+const paginate = async (model, query = {}, options = {}) => {
+  const {
+    page     = 1,
+    limit    = 10,
+    sort     = { createdAt: -1 },
+    populate = [],
+    select   = ""
+  } = options;
+
+  const skip = (page - 1) * limit;
+
+  const [data, total] = await Promise.all([
+    model.find(query)
+         .sort(sort)
+         .skip(skip)
+         .limit(limit)
+         .select(select)
+         .populate(populate)
+         .lean(),
+    model.countDocuments(query)
+  ]);
+
+  return {
+    data,
+    pagination: {
+      total,
+      page,
+      limit,
+      pages:    Math.ceil(total / limit),
+      hasNext:  page < Math.ceil(total / limit),
+      hasPrev:  page > 1
+    }
+  };
+};
+
+// Usage
+const result = await paginate(
+  User,
+  { role: "user", verified: true },
+  { page: 2, limit: 10, sort: { name: 1 }, select: "name email age" }
+);
+```
+
+---
+
+### 11.3 Soft Delete Pattern
+
+```js
+const softDeletePlugin = (schema) => {
+  schema.add({
+    deletedAt: { type: Date, default: null },
+    isDeleted: { type: Boolean, default: false }
+  });
+
+  // Override find to exclude soft-deleted by default
+  schema.pre(/^find/, function (next) {
+    if (!this.getOptions().includeDeleted) {
+      this.where({ isDeleted: false });
+    }
+    next();
+  });
+
+  schema.methods.softDelete = async function () {
+    this.isDeleted = true;
+    this.deletedAt = new Date();
+    return this.save();
+  };
+
+  schema.methods.restore = async function () {
+    this.isDeleted = false;
+    this.deletedAt = null;
+    return this.save();
+  };
+
+  schema.statics.findWithDeleted = function (filter) {
+    return this.find(filter).setOptions({ includeDeleted: true });
+  };
+};
+
+// Apply plugin
+userSchema.plugin(softDeletePlugin);
+
+// Usage
+const user = await User.findById(id);
+await user.softDelete();                               // soft delete
+
+const allIncDeleted = await User.findWithDeleted({});  // include deleted
+await user.restore();                                  // restore
+```
+
+---
+
+### 11.4 Change Streams — Real-Time Updates
+
+```js
+// Watch for changes in the orders collection
+const changeStream = Order.watch([
+  { $match: { "operationType": "insert" } }  // only inserts
+]);
+
+changeStream.on("change", (change) => {
+  const newOrder = change.fullDocument;
+  console.log("New order received:", newOrder._id);
+  // Trigger notifications, update dashboards, etc.
+});
+
+// Watch specific document
+const userStream = User.watch([
+  { $match: { "documentKey._id": mongoose.Types.ObjectId(userId) } }
+]);
+userStream.on("change", (change) => {
+  console.log("User document changed:", change.updateDescription);
+});
+```
+
+---
+
+## 12. Performance & Best Practices
+
+### 12.1 Index Strategy
+
+```js
+// ✅ DO: Create indexes for frequently queried fields
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ role: 1, createdAt: -1 });      // compound for filtered+sorted queries
+productSchema.index({ category: 1, price: 1 });
+
+// ✅ DO: Use covered queries (all fields in index)
+// If index is { email: 1, role: 1 }, this query is fully covered:
+await User.find({ email: "x" }, { email: 1, role: 1, _id: 0 });
+
+// ❌ AVOID: Too many indexes slow down writes
+// ❌ AVOID: Leading wildcard regex — can't use index
+db.users.find({ name: { $regex: /alice/ } })    // no index
+db.users.find({ name: { $regex: /^Alice/ } })   // uses index (anchored)
+```
+
+### 12.2 Query Optimization
+
+```js
+// ✅ Use lean() for read-only queries (3-5x faster)
+const users = await User.find({ role: "user" }).lean();
+
+// ✅ Limit fields with projection
+const names = await User.find({}, "name email").lean();
+
+// ✅ Use countDocuments over find().length
+const count = await User.countDocuments({ role: "user" });
+
+// ✅ Use $exists sparingly — prefer a default value
+// Instead of: find({ bio: { $exists: false } })
+// Better:     schema field has default: null, then find({ bio: null })
+
+// ✅ Avoid $where (executes JS engine, very slow)
+
+// ✅ Use $in instead of multiple $or conditions
+await User.find({ role: { $in: ["admin", "moderator"] } }); // good
+await User.find({ $or: [{ role: "admin" }, { role: "moderator" }] }); // slower
+
+// ✅ Batch inserts with insertMany
+await User.insertMany(bigArray, { ordered: false }); // ordered:false = faster
+```
+
+### 12.3 Schema Design Tips
+
+```js
+// ✅ Embed for one-to-few (< ~20 items)
+// ✅ Reference for one-to-many / many-to-many
+// ✅ Store computed values to avoid expensive aggregations
+//    e.g., store "reviewCount" and "avgRating" on Product,
+//    update them in a post-save hook on Review
+
+// ✅ Use appropriate data types
+// Store dates as ISODate, not strings
+// Store numbers as Number, not strings
+
+// ✅ Avoid unbounded arrays (arrays that grow forever)
+// e.g., storing all user activity in one array = 16MB doc limit issue
+// Solution: Use a separate "activities" collection
+
+// ✅ Schema versioning for future migrations
+const userSchema = new mongoose.Schema({
+  schemaVersion: { type: Number, default: 2 },
+  // ... other fields
+});
+```
+
+### 12.4 Connection Pooling
+
+```js
+await mongoose.connect(process.env.MONGO_URI, {
+  maxPoolSize:     10,   // max simultaneous connections (default: 5)
+  minPoolSize:     2,    // keep 2 connections open at all times
+  serverSelectionTimeoutMS: 5000,
+  socketTimeoutMS: 45000,
+  family: 4              // use IPv4
+});
+```
+
+---
+
+## 13. Real-World Project Example
+
+Let's build the **core data layer of an e-commerce API** combining everything above.
+
+### Models
+
+```js
+// models/Category.js
+const categorySchema = new mongoose.Schema({
+  name:   { type: String, required: true, unique: true },
+  slug:   { type: String, unique: true },
+  parent: { type: mongoose.Schema.Types.ObjectId, ref: "Category", default: null }
+}, { timestamps: true });
+
+categorySchema.pre("save", function(next) {
+  this.slug = this.name.toLowerCase().replace(/\s+/g, "-");
+  next();
+});
+
+export const Category = mongoose.model("Category", categorySchema);
+```
+
+### Service Layer
+
+```js
+// services/productService.js
+import Product from "../models/Product.js";
+
+export const getProductsWithFilters = async ({
+  category, minPrice, maxPrice, tags, search,
+  page = 1, limit = 12, sortBy = "createdAt", order = "desc"
+}) => {
+  const filter = { isActive: true };
+
+  if (category)               filter.category = category;
+  if (minPrice || maxPrice)   filter.price = {};
+  if (minPrice)               filter.price.$gte = Number(minPrice);
+  if (maxPrice)               filter.price.$lte = Number(maxPrice);
+  if (tags?.length)           filter.tags = { $in: tags };
+  if (search)                 filter.$text = { $search: search };
+
+  const sortOrder = order === "asc" ? 1 : -1;
+  const skip = (page - 1) * limit;
+
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .sort({ [sortBy]: sortOrder })
+      .skip(skip)
+      .limit(Number(limit))
+      .select("name slug price discount category tags stock")
+      .lean(),
+    Product.countDocuments(filter)
+  ]);
+
+  return {
+    products,
+    pagination: { total, page: Number(page), limit: Number(limit),
+                  pages: Math.ceil(total / limit) }
+  };
+};
+
+export const getDashboardStats = async () => {
+  const [revenueStats, topProducts, categoryBreakdown] = await Promise.all([
+    // Total revenue this month
+    Order.aggregate([
+      { $match: {
+        status: "delivered",
+        createdAt: { $gte: new Date(new Date().setDate(1)) }  // start of month
+      }},
+      { $group: {
+        _id: null,
+        totalRevenue: { $sum: "$totalAmount" },
+        orderCount:   { $sum: 1 },
+        avgOrderVal:  { $avg: "$totalAmount" }
+      }},
+      { $project: { _id: 0 } }
+    ]),
+
+    // Top 5 products by sales
+    Order.aggregate([
+      { $match: { status: "delivered" } },
+      { $unwind: "$items" },
+      { $group: { _id: "$items.product", sold: { $sum: "$items.quantity" } } },
+      { $sort: { sold: -1 } },
+      { $limit: 5 },
+      { $lookup: { from: "products", localField: "_id", foreignField: "_id",
+                   as: "product" } },
+      { $unwind: "$product" },
+      { $project: { name: "$product.name", category: "$product.category", sold: 1 } }
+    ]),
+
+    // Revenue by category
+    Order.aggregate([
+      { $match: { status: "delivered" } },
+      { $unwind: "$items" },
+      { $lookup: { from: "products", localField: "items.product",
+                   foreignField: "_id", as: "prod" } },
+      { $unwind: "$prod" },
+      { $group: { _id: "$prod.category",
+                  revenue:  { $sum: { $multiply: ["$items.price", "$items.quantity"] } },
+                  unitsSold: { $sum: "$items.quantity" } } },
+      { $sort: { revenue: -1 } }
+    ])
+  ]);
+
+  return {
+    monthly: revenueStats[0] || { totalRevenue: 0, orderCount: 0, avgOrderVal: 0 },
+    topProducts,
+    categoryBreakdown
+  };
+};
+```
+
+### API Controller
+
+```js
+// controllers/productController.js
+import { getProductsWithFilters, getDashboardStats } from "../services/productService.js";
+
+export const listProducts = async (req, res) => {
+  try {
+    const data = await getProductsWithFilters(req.query);
+    res.json({ success: true, ...data });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+};
+
+export const createProduct = async (req, res) => {
+  const session = await mongoose.startSession();
+  try {
+    const result = await session.withTransaction(async () => {
+      const product = await Product.create([req.body], { session });
+
+      // Update category product count
+      await Category.findOneAndUpdate(
+        { name: req.body.category },
+        { $inc: { productCount: 1 } },
+        { session }
+      );
+
+      return product[0];
+    });
+
+    res.status(201).json({ success: true, data: result });
+  } catch (err) {
+    res.status(400).json({ success: false, error: err.message });
+  } finally {
+    session.endSession();
+  }
+};
+```
+
+---
+
+## Summary: Raw MongoDB vs Mongoose Cheat Sheet
+
+| Operation | Raw MongoDB (mongosh) | Mongoose |
+|---|---|---|
+| Insert one | `db.col.insertOne({})` | `Model.create({})` |
+| Insert many | `db.col.insertMany([])` | `Model.insertMany([])` |
+| Find all | `db.col.find()` | `Model.find()` |
+| Find one | `db.col.findOne({})` | `Model.findOne({})` |
+| Find by ID | `db.col.findOne({_id: ObjectId("...")})` | `Model.findById(id)` |
+| Update one | `db.col.updateOne(f, {$set:{}})` | `Model.findByIdAndUpdate(id, {})` |
+| Update many | `db.col.updateMany(f, {$set:{}})` | `Model.updateMany(f, {})` |
+| Delete one | `db.col.deleteOne({})` | `Model.findByIdAndDelete(id)` |
+| Aggregate | `db.col.aggregate([])` | `Model.aggregate([])` |
+| Count | `db.col.countDocuments({})` | `Model.countDocuments({})` |
+| Index | `db.col.createIndex({f:1})` | `schema.index({f:1})` |
+
+---
+
+## Further Learning
+
+- [MongoDB Documentation](https://www.mongodb.com/docs/) — Official docs with examples
+- [Mongoose Documentation](https://mongoosejs.com/docs/) — Complete ODM reference
+- [MongoDB University](https://learn.mongodb.com/) — Free courses (M001, M121 Aggregation)
+- [MongoDB Atlas](https://www.mongodb.com/atlas) — Cloud hosted MongoDB with free tier
+
+---
+
+*Happy querying! MongoDB's flexibility combined with Mongoose's structure gives you the best of both worlds for modern Node.js applications.*

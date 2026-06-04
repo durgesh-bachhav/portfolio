@@ -1,0 +1,644 @@
+# Dockerizing a MERN Application and Deploying to a VPS with GitHub Actions
+
+## Introduction
+
+In this guide, we will build a complete deployment workflow for a MERN application where:
+
+* Frontend (React) is in a separate GitHub repository
+* Backend (Node.js/Express) is in a separate GitHub repository
+* MongoDB runs in Docker
+* Nginx acts as a reverse proxy
+* Deployment happens on a VPS
+* GitHub Actions automatically deploys on every push to the main branch
+
+By the end, you'll have a production-ready CI/CD pipeline.
+
+---
+
+# Final Architecture
+
+```text
+Internet
+    │
+    ▼
+Nginx (VPS)
+    │
+ ┌──┴───────────┐
+ │              │
+ ▼              ▼
+React App    Express API
+(Container)  (Container)
+                 │
+                 ▼
+            MongoDB
+           (Container)
+```
+
+---
+
+# Project Structure
+
+## Frontend Repository
+
+```text
+frontend/
+│
+├── src/
+├── public/
+├── package.json
+├── Dockerfile
+└── .github/
+    └── workflows/
+        └── deploy.yml
+```
+
+---
+
+## Backend Repository
+
+```text
+backend/
+│
+├── src/
+├── package.json
+├── Dockerfile
+├── docker-compose.yml
+└── .github/
+    └── workflows/
+        └── deploy.yml
+```
+
+---
+
+# Step 1: Create VPS
+
+Recommended Specs:
+
+```text
+2 CPU
+4 GB RAM
+50 GB SSD
+Ubuntu 24.04
+```
+
+Providers:
+
+* DigitalOcean
+* AWS EC2
+* Hetzner
+* Contabo
+* Hostinger VPS
+
+---
+
+# Step 2: Install Docker
+
+Update server:
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+```
+
+Install Docker:
+
+```bash
+curl -fsSL https://get.docker.com | sh
+```
+
+Verify:
+
+```bash
+docker --version
+```
+
+---
+
+# Step 3: Install Docker Compose
+
+```bash
+docker compose version
+```
+
+Ubuntu 24 usually includes Docker Compose automatically.
+
+---
+
+# Step 4: Backend Dockerfile
+
+Create:
+
+```dockerfile
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+EXPOSE 5000
+
+CMD ["npm","start"]
+```
+
+Build locally:
+
+```bash
+docker build -t crud-api .
+```
+
+Run:
+
+```bash
+docker run -p 5000:5000 crud-api
+```
+
+---
+
+# Step 5: Frontend Dockerfile
+
+Create:
+
+```dockerfile
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+RUN npm install -g serve
+
+EXPOSE 3000
+
+CMD ["serve","-s","build","-l","3000"]
+```
+
+Build:
+
+```bash
+docker build -t crud-frontend .
+```
+
+---
+
+# Step 6: Backend Compose File
+
+Create:
+
+```yaml
+services:
+
+  api:
+    image: yourdockerhub/crud-api:latest
+    container_name: crud-api
+
+    ports:
+      - "5000:5000"
+
+    environment:
+      MONGO_URI: mongodb://mongo:27017/cruddb
+
+    depends_on:
+      - mongo
+
+  mongo:
+    image: mongo:8
+
+    container_name: mongo
+
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  mongo-data:
+```
+
+---
+
+# Step 7: Frontend Compose File
+
+Create:
+
+```yaml
+services:
+
+  frontend:
+    image: yourdockerhub/crud-frontend:latest
+
+    container_name: crud-frontend
+
+    ports:
+      - "3000:3000"
+```
+
+---
+
+# Step 8: Create Docker Hub Account
+
+Login:
+
+```bash
+docker login
+```
+
+Tag image:
+
+```bash
+docker tag crud-api yourdockerhub/crud-api:latest
+```
+
+Push:
+
+```bash
+docker push yourdockerhub/crud-api:latest
+```
+
+Same for frontend.
+
+---
+
+# Step 9: Setup Nginx
+
+Install:
+
+```bash
+sudo apt install nginx -y
+```
+
+---
+
+# Step 10: Backend Nginx Config
+
+Create:
+
+```bash
+sudo nano /etc/nginx/sites-available/api
+```
+
+```nginx
+server {
+
+    server_name api.example.com;
+
+    location / {
+
+        proxy_pass http://localhost:5000;
+
+        proxy_set_header Host $host;
+
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+---
+
+# Step 11: Frontend Nginx Config
+
+```nginx
+server {
+
+    server_name example.com;
+
+    location / {
+
+        proxy_pass http://localhost:3000;
+
+        proxy_set_header Host $host;
+
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}
+```
+
+Enable:
+
+```bash
+sudo ln -s /etc/nginx/sites-available/api /etc/nginx/sites-enabled/
+
+sudo nginx -t
+
+sudo systemctl restart nginx
+```
+
+---
+
+# Step 12: SSL Setup
+
+Install Certbot:
+
+```bash
+sudo apt install certbot python3-certbot-nginx -y
+```
+
+Generate SSL:
+
+```bash
+sudo certbot --nginx
+```
+
+Select:
+
+```text
+example.com
+api.example.com
+```
+
+Done.
+
+---
+
+# Step 13: VPS Directory Structure
+
+```text
+/opt/apps/
+
+├── backend
+│   └── docker-compose.yml
+
+└── frontend
+    └── docker-compose.yml
+```
+
+---
+
+# Step 14: Create Deployment User
+
+```bash
+sudo adduser deploy
+```
+
+Add docker permission:
+
+```bash
+sudo usermod -aG docker deploy
+```
+
+---
+
+# Step 15: Generate SSH Key
+
+On local machine:
+
+```bash
+ssh-keygen -t ed25519
+```
+
+Copy:
+
+```bash
+cat ~/.ssh/id_ed25519.pub
+```
+
+Paste into:
+
+```text
+/home/deploy/.ssh/authorized_keys
+```
+
+---
+
+# Step 16: GitHub Secrets
+
+Backend Repository:
+
+```text
+VPS_HOST
+VPS_USER
+VPS_SSH_KEY
+
+DOCKER_USERNAME
+DOCKER_PASSWORD
+```
+
+Frontend Repository:
+
+```text
+VPS_HOST
+VPS_USER
+VPS_SSH_KEY
+
+DOCKER_USERNAME
+DOCKER_PASSWORD
+```
+
+---
+
+# Step 17: Backend GitHub Action
+
+Create:
+
+```text
+.github/workflows/deploy.yml
+```
+
+```yaml
+name: Deploy Backend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build Image
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/crud-api:latest .
+
+      - name: Push Image
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/crud-api:latest
+
+      - name: Deploy VPS
+
+        uses: appleboy/ssh-action@v1.0.3
+
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+
+          script: |
+            cd /opt/apps/backend
+
+            docker compose pull
+
+            docker compose down
+
+            docker compose up -d
+```
+
+---
+
+# Step 18: Frontend GitHub Action
+
+```yaml
+name: Deploy Frontend
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+
+  deploy:
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - uses: docker/login-action@v3
+
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Build
+        run: |
+          docker build -t ${{ secrets.DOCKER_USERNAME }}/crud-frontend:latest .
+
+      - name: Push
+        run: |
+          docker push ${{ secrets.DOCKER_USERNAME }}/crud-frontend:latest
+
+      - name: Deploy
+
+        uses: appleboy/ssh-action@v1.0.3
+
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+
+          script: |
+            cd /opt/apps/frontend
+
+            docker compose pull
+
+            docker compose down
+
+            docker compose up -d
+```
+
+---
+
+# Deployment Flow
+
+Developer pushes code:
+
+```text
+git push origin main
+```
+
+GitHub Actions:
+
+```text
+1. Checkout code
+2. Build Docker image
+3. Push image to Docker Hub
+4. SSH into VPS
+5. Pull latest image
+6. Restart containers
+7. Deployment complete
+```
+
+No manual server login required.
+
+---
+
+# Useful Commands
+
+View containers:
+
+```bash
+docker ps
+```
+
+View logs:
+
+```bash
+docker logs crud-api
+```
+
+Follow logs:
+
+```bash
+docker logs -f crud-api
+```
+
+Restart:
+
+```bash
+docker restart crud-api
+```
+
+Stop all:
+
+```bash
+docker compose down
+```
+
+Start all:
+
+```bash
+docker compose up -d
+```
+
+---
+
+# Production Improvements
+
+For real-world production systems, add:
+
+* Multi-stage Docker builds
+* Health checks
+* Docker image versioning
+* Private Docker registry
+* Monitoring (Prometheus + Grafana)
+* Log aggregation
+* Automated database backups
+* Blue-Green deployment strategy
+* GitHub Environment approvals
+* Kubernetes (future scaling)
+
+---
+
+# Conclusion
+
+This setup provides:
+
+* Separate frontend and backend repositories
+* Dockerized applications
+* MongoDB in containers
+* Nginx reverse proxy
+* SSL certificates
+* GitHub Actions CI/CD
+* Automatic VPS deployments
+
+This is a solid production-grade foundation for most startup and SaaS applications.
