@@ -22,7 +22,7 @@ export function BlogCard({
       <GridSection className="h-full p-6">
         <div className="flex h-full flex-col gap-4">
           {thumbnail && (
-            <div className="relative h-44 w-full overflow-hidden">
+            <div className="relative w-full h-64 sm:h-72 md:h-80 overflow-hidden">
               <Image
                 src={thumbnail}
                 alt={title}
