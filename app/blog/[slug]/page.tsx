@@ -16,6 +16,7 @@ import { PromoContent } from "@/components/promo-content";
 import { getAuthor, isValidAuthor } from "@/lib/authors";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import { HashScrollHandler } from "@/components/hash-scroll-handler";
+import type { Metadata } from "next";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -26,6 +27,65 @@ const blogSource = loader({
   baseUrl: "/blog",
   source: { files: mdxSource.files() },
 });
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { slug } = await params;
+  const page = blogSource.getPage([slug]);
+
+  if (!page) {
+    return {
+      title: "Post Not Found",
+    };
+  }
+
+  const postUrl = `https://durgeshbachhav.vercel.app/blog/${slug}`;
+  const title = page.data.title;
+  const description =
+    page.data.description ||
+    "Read this technical article on web development, React, Next.js, Node.js, and more.";
+  const tags = page.data.tags || [];
+  const thumbnail = page.data.thumbnail;
+
+  return {
+    title: title,
+    description: description,
+    keywords: [...tags, "web development", "tutorial", "programming"],
+    authors: [
+      {
+        name: page.data.author || "Durgesh Bachhav",
+      },
+    ],
+    alternates: {
+      canonical: postUrl,
+    },
+    openGraph: {
+      title: title,
+      description: description,
+      url: postUrl,
+      type: "article",
+      publishedTime: page.data.date,
+      tags: tags,
+      images: thumbnail
+        ? [
+            {
+              url: thumbnail,
+              width: 1200,
+              height: 630,
+              alt: title,
+            },
+          ]
+        : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: title,
+      description: description,
+      images: thumbnail ? [thumbnail] : undefined,
+    },
+  };
+}
 
 const formatDate = (date: Date): string => {
   return date.toLocaleDateString("en-US", {

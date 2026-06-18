@@ -6,6 +6,45 @@ import { BlogCard } from "@/components/blog-card";
 import { TagFilter } from "@/components/tag-filter";
 import { FlickeringGrid } from "@/components/magicui/flickering-grid";
 import GridSection from "@/components/grid-section";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Blog - Technical Guides & Tutorials",
+  description:
+    "Technical guides, tutorials, and insights on React, Next.js, Node.js, MongoDB, Redis, TypeScript, and modern web development. Learn from real-world experience building scalable applications.",
+  keywords: [
+    "React Tutorial",
+    "Next.js Guide",
+    "Node.js Tutorial",
+    "MongoDB Guide",
+    "Redis Tutorial",
+    "TypeScript Guide",
+    "Web Development Blog",
+    "Full Stack Development",
+    "MERN Stack Tutorial",
+    "Backend Development",
+    "Frontend Development",
+    "API Development",
+    "Database Tutorial",
+    "Web3 Tutorial",
+    "Developer Blog",
+  ],
+  alternates: {
+    canonical: "https://durgeshbachhav.vercel.app/blog",
+  },
+  openGraph: {
+    title: "Blog - Durgesh Bachhav",
+    description:
+      "Technical guides, tutorials, and insights on React, Next.js, Node.js, MongoDB, Redis, and modern web development.",
+    url: "https://durgeshbachhav.vercel.app/blog",
+    type: "website",
+  },
+  twitter: {
+    title: "Blog - Durgesh Bachhav",
+    description:
+      "Technical guides, tutorials, and insights on React, Next.js, Node.js, MongoDB, Redis, and modern web development.",
+  },
+};
 
 interface BlogData {
     title: string;

@@ -14,6 +14,16 @@ import GridSection from "@/components/grid-section";
 import { DATA } from "@/data/resume";
 import Image from "next/image";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export const metadata: Metadata = {
+  title: "Durgesh Bachhav - Full Stack MERN Developer",
+  description:
+    "Full Stack MERN Developer with 2+ years of experience building scalable SaaS, FinTech, E-commerce, and Web3 applications using TypeScript, React, Next.js, Node.js, MongoDB, and Redis.",
+  alternates: {
+    canonical: "https://durgeshbachhav.vercel.app",
+  },
+};
 
 const BLUR_FADE_DELAY = 0.04;
 const CORE_STACK = [

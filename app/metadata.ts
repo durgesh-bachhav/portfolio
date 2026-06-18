@@ -1,40 +1,59 @@
-// metadata.ts
 import type { Metadata, Viewport } from "next";
 import { DATA } from "@/data/resume";
 import { siteConfig } from "@/lib/site";
 
-// Additional keywords
 export const metadataKeywords = [
-    "Blog",
-    "React",
-    "MagicUI Blog",
-    "MagicUI Blog Template",
-    "MagicUI Blog Template Next.js",
-    "MagicUI Blog Template Tailwind",
-    "MagicUI Blog Template Shadcn",
-    "Next.js Blog",
-    "React Blog",
-    "Web Development",
-    "Tutorials",
-    "MDX Blog",
-    "Modern Blog Template",
+    "Durgesh Bachhav",
+    "Full Stack Developer",
+    "MERN Stack Developer",
+    "React Developer",
+    "Next.js Developer",
+    "TypeScript Developer",
+    "Node.js Developer",
+    "Web Developer",
+    "Software Developer",
+    "Freelance Developer",
+    "SaaS Developer",
+    "FinTech Developer",
+    "Web3 Developer",
+    "Blockchain Developer",
+    "MongoDB Developer",
+    "PostgreSQL Developer",
+    "Redis Developer",
+    "Portfolio",
+    "Developer Portfolio",
+    "Nashik Developer",
+    "India Developer",
+    "React.js",
+    "Next.js",
+    "TypeScript",
+    "Node.js",
+    "Express.js",
+    "MongoDB",
+    "PostgreSQL",
+    "Redis",
+    "Docker",
+    "AWS",
+    "Web3",
+    "Blockchain",
 ];
 
-// Viewport settings
 export const viewport: Viewport = {
-    themeColor: "black",
+    themeColor: [
+        { media: "(prefers-color-scheme: light)", color: "#f8f2e8" },
+        { media: "(prefers-color-scheme: dark)", color: "#1c1a16" },
+    ],
 };
 
-// Combined unified metadata
 export const metadata: Metadata = {
     metadataBase: new URL(DATA.url),
 
     title: {
-        default: DATA.name,
+        default: siteConfig.name,
         template: `%s | ${DATA.name}`,
     },
 
-    description: siteConfig.description || DATA.description,
+    description: siteConfig.description,
 
     keywords: metadataKeywords,
 
@@ -47,20 +66,37 @@ export const metadata: Metadata = {
 
     creator: "Durgesh Bachhav",
 
+    publisher: "Durgesh Bachhav",
+
+    formatDetection: {
+        email: false,
+        address: false,
+        telephone: false,
+    },
+
     openGraph: {
         type: "website",
         locale: "en_US",
-        url: siteConfig.url || DATA.url,
-        title: siteConfig.name || DATA.name,
-        description: siteConfig.description || DATA.description,
-        siteName: siteConfig.name || DATA.name,
+        url: siteConfig.url,
+        title: siteConfig.name,
+        description: siteConfig.description,
+        siteName: "Durgesh Bachhav Portfolio",
+        images: [
+            {
+                url: "/og-image.png",
+                width: 1200,
+                height: 630,
+                alt: "Durgesh Bachhav - Full Stack Developer Portfolio",
+            },
+        ],
     },
 
     twitter: {
         card: "summary_large_image",
-        title: siteConfig.name || DATA.name,
-        description: siteConfig.description || DATA.description,
-        creator: "@durgesh_bachhav",
+        title: siteConfig.name,
+        description: siteConfig.description,
+        creator: "@durgeshbachhav",
+        images: ["/og-image.png"],
     },
 
     robots: {
@@ -75,8 +111,22 @@ export const metadata: Metadata = {
         },
     },
 
+    alternates: {
+        canonical: siteConfig.url,
+    },
+
+    icons: {
+        icon: "/favicon.ico",
+        shortcut: "/favicon.ico",
+        apple: "/favicon.ico",
+    },
+
+    manifest: "/site.webmanifest",
+
     verification: {
         google: "",
         yandex: "",
     },
+
+    category: "technology",
 };

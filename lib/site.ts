@@ -1,8 +1,8 @@
 export const siteConfig = {
-  name: "Blog",
+  name: "Durgesh Bachhav - Full Stack Developer",
   url: "https://durgeshbachhav.vercel.app",
   description:
-    "Modern React and web development tutorials, insights, and best practices.",
+    "Full Stack MERN Developer portfolio showcasing scalable SaaS, FinTech, E-commerce, and Web3 applications built with TypeScript, React, Next.js, Node.js, and MongoDB.",
 };
 
 export type SiteConfig = typeof siteConfig;
