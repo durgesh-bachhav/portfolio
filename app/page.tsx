@@ -53,6 +53,13 @@ export default function Page() {
                   >
                     Email Me
                   </Link>
+                  <a
+                    href="/resumes/Resume.pdf"
+                    download
+                    className="border border-orange-600 px-4 py-2 text-sm font-medium text-orange-700 dark:text-orange-400 hover:bg-orange-600 hover:text-[#f8f2e8]"
+                  >
+                    Download Resume
+                  </a>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Link
@@ -65,10 +72,10 @@ export default function Page() {
                     <TooltipContent>
                       <div className="flex flex-col gap-1 text-xs">
                         <Link
-                          href="https://github.com/durgeshdevwork-debug"
+                          href="https://github.com/durgesh-bachhav"
                           className="text-orange-600 dark:text-orange-400 hover:underline"
                         >
-                          durgeshdevwork-debug
+                          durgesh-bachhav
                         </Link>
                         <Link
                           href="https://github.com/durgeshbachhav"

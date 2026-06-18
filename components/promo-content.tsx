@@ -21,8 +21,8 @@ export function PromoContent({
       >
         <div className="flex items-center gap-3">
           <img
-            src="/magicui-logo.png"
-            alt="Durgesh Bachhav"
+        src="/durgesh-svg.svg"
+            alt="Cursify"
             className="w-8 h-8 object-cover flex-shrink-0"
           />
           <div className="flex-1 min-w-0">
@@ -30,7 +30,7 @@ export function PromoContent({
               Try Cursify
             </p>
             <p className="text-xs text-[#6f5f4d] dark:text-[#b7a48f] truncate">
-              Beautiful design system
+              Cursor animation library
             </p>
           </div>
           <a
