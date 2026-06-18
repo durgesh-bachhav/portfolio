@@ -115,12 +115,6 @@ export const metadata: Metadata = {
         canonical: siteConfig.url,
     },
 
-    icons: {
-        icon: "/favicon.ico",
-        shortcut: "/favicon.ico",
-        apple: "/favicon.ico",
-    },
-
     manifest: "/site.webmanifest",
 
     verification: {
