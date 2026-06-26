@@ -1,0 +1,1188 @@
+---
+title: "Python Beginner to Master: Complete Backend + AI Engineering Roadmap"
+description: "A complete Python learning roadmap covering fundamentals, FastAPI, PostgreSQL with SQLAlchemy, Docker, Redis, OpenAI/Gemini/Anthropic APIs, LangChain, LangGraph, and RAG."
+date: "2026-06-26"
+tags:
+  [
+    "Python",
+    "FastAPI",
+    "SQLAlchemy",
+    "PostgreSQL",
+    "Docker",
+    "Redis",
+    "OpenAI",
+    "Gemini",
+    "Anthropic",
+    "LangChain",
+    "LangGraph",
+    "RAG",
+    "Backend",
+    "AI Engineering",
+  ]
+featured: true
+readTime: "35 min read"
+author: "durgesh"
+thumbnail: "/thumbnails/python-beginner-to-master.png"
+---
+
+## Introduction
+
+Python is one of the most versatile programming languages in the world. It powers backend APIs, data pipelines, machine learning models, automation scripts, and modern AI applications. If your goal is to become a backend engineer or an AI engineer who can ship real products, this roadmap is for you.
+
+This guide is structured as a practical learning path. It starts with Python fundamentals and moves through professional backend development with FastAPI and PostgreSQL. Then it covers infrastructure skills like Docker and Redis. Finally, it brings everything into the AI world with OpenAI, Gemini, Anthropic APIs, LangChain, LangGraph, and RAG.
+
+By the end, you will know how to build production-ready Python backends and integrate large language models into real applications.
+
+---
+
+# Who This Roadmap Is For
+
+This roadmap is ideal if you:
+
+* Are new to Python and want a structured path
+* Already know another language and want to switch to Python
+* Want to build APIs and backend services
+* Are interested in AI engineering and LLM-powered applications
+* Need a clear timeline for learning job-ready skills
+
+You do not need a computer science degree. Basic programming logic and consistency are enough.
+
+---
+
+# Total Learning Timeline
+
+```text
+Python fundamentals              2–3 weeks
+FastAPI                          3–4 weeks
+PostgreSQL with SQLAlchemy       2 weeks
+Docker + Redis                   1–2 weeks
+OpenAI, Gemini, Anthropic APIs   2 weeks
+LangChain + LangGraph + RAG      3–4 weeks
+────────────────────────────────────────
+Total                            13–17 weeks
+```
+
+This assumes 2–3 hours of focused practice daily. Adjust based on your schedule.
+
+---
+
+# Module 1: Python Fundamentals (2–3 Weeks)
+
+Before building real applications, you need a solid foundation in the language itself.
+
+---
+
+## Development Environment Setup
+
+Install Python 3.11 or higher from the official website.
+
+Verify installation:
+
+```bash
+python --version
+```
+
+Use `pyenv` to manage multiple Python versions:
+
+```bash
+curl https://pyenv.run | bash
+pyenv install 3.12
+pyenv global 3.12
+```
+
+Always use virtual environments for projects:
+
+```bash
+python -m venv venv
+source venv/bin/activate
+```
+
+Recommended editor setup:
+
+* VS Code with Python extension
+* Ruff for linting and formatting
+* MyPy for static type checking
+
+---
+
+## Core Syntax and Data Types
+
+Python syntax is clean and readable.
+
+```python
+name = "Durgesh"
+age = 25
+is_active = True
+
+# Lists
+fruits = ["apple", "banana", "cherry"]
+
+# Dictionaries
+user = {"name": "Durgesh", "age": 25}
+
+# Tuples and sets
+point = (10, 20)
+unique_items = {1, 2, 3}
+```
+
+Practice variables, type casting, string formatting, and built-in functions.
+
+---
+
+## Control Flow
+
+```python
+score = 85
+
+if score >= 90:
+    print("A")
+elif score >= 80:
+    print("B")
+else:
+    print("C")
+
+for fruit in fruits:
+    print(fruit)
+
+while age < 30:
+    age += 1
+```
+
+Master loops, conditionals, list comprehensions, and generator expressions.
+
+---
+
+## Functions and Scope
+
+```python
+def greet(name: str) -> str:
+    return f"Hello, {name}"
+
+# Default and keyword arguments
+def create_user(name, role="user"):
+    return {"name": name, "role": role}
+
+# Lambda
+square = lambda x: x ** 2
+
+# Args and kwargs
+def flexible(*args, **kwargs):
+    print(args, kwargs)
+```
+
+Learn about scope, closures, decorators, and recursion.
+
+---
+
+## Object-Oriented Programming
+
+```python
+class User:
+    def __init__(self, name: str, email: str):
+        self.name = name
+        self.email = email
+
+    def introduce(self) -> str:
+        return f"Hi, I am {self.name}"
+
+class Admin(User):
+    def __init__(self, name, email):
+        super().__init__(name, email)
+        self.role = "admin"
+```
+
+Understand classes, inheritance, encapsulation, polymorphism, dunder methods, and abstract base classes.
+
+---
+
+## Error Handling
+
+```python
+try:
+    result = 10 / 0
+except ZeroDivisionError:
+    print("Cannot divide by zero")
+finally:
+    print("Cleanup done")
+```
+
+Practice custom exceptions and when to raise them.
+
+---
+
+## File Handling and Working with Data
+
+```python
+with open("data.txt", "r") as file:
+    content = file.read()
+
+import json
+
+with open("users.json", "w") as file:
+    json.dump({"name": "Durgesh"}, file)
+```
+
+Learn CSV, JSON, and basic file operations.
+
+---
+
+## Modules, Packages, and Virtual Environments
+
+```python
+from datetime import datetime
+import requests
+
+print(datetime.now())
+```
+
+Understand how imports work, how to create packages with `__init__.py`, and how to publish to PyPI.
+
+---
+
+## Testing Basics
+
+```python
+def add(a: int, b: int) -> int:
+    return a + b
+
+# Using pytest
+def test_add():
+    assert add(2, 3) == 5
+```
+
+Install pytest:
+
+```bash
+pip install pytest
+pytest
+```
+
+---
+
+## Key Takeaways from Module 1
+
+* Write clean, readable, type-annotated code
+* Understand data structures and their use cases
+* Practice functions and object-oriented design
+* Know how to handle errors and write tests
+* Use virtual environments for every project
+
+---
+
+# Module 2: FastAPI (3–4 Weeks)
+
+FastAPI is the modern framework of choice for building high-performance Python APIs.
+
+---
+
+## Why FastAPI
+
+* Automatic OpenAPI and Swagger documentation
+* Built on Starlette and Pydantic
+* Native async support
+* Type-safe request and response models
+* Excellent developer experience
+
+---
+
+## Installation and First App
+
+```bash
+pip install fastapi uvicorn
+```
+
+```python
+from fastapi import FastAPI
+
+app = FastAPI()
+
+@app.get("/")
+def read_root():
+    return {"message": "Hello World"}
+```
+
+Run the server:
+
+```bash
+uvicorn main:app --reload
+```
+
+Visit `http://localhost:8000/docs` for Swagger UI.
+
+---
+
+## Path, Query, and Body Parameters
+
+```python
+from fastapi import FastAPI, Query, Path
+from pydantic import BaseModel
+
+app = FastAPI()
+
+class Item(BaseModel):
+    name: str
+    price: float
+    is_offer: bool | None = None
+
+@app.get("/items/{item_id}")
+def read_item(
+    item_id: int = Path(..., gt=0),
+    q: str | None = Query(None, max_length=50)
+):
+    return {"item_id": item_id, "q": q}
+
+@app.post("/items")
+def create_item(item: Item):
+    return item
+```
+
+---
+
+## Pydantic Models
+
+Pydantic is the data validation engine behind FastAPI.
+
+```python
+from pydantic import BaseModel, EmailStr, Field
+
+class UserCreate(BaseModel):
+    name: str = Field(..., min_length=2)
+    email: EmailStr
+    age: int = Field(..., ge=18)
+
+class UserResponse(BaseModel):
+    id: int
+    name: str
+    email: str
+
+    class Config:
+        from_attributes = True
+```
+
+---
+
+## Dependency Injection
+
+```python
+from fastapi import Depends
+
+def get_db():
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@app.get("/users")
+def read_users(db: Session = Depends(get_db)):
+    return db.query(User).all()
+```
+
+---
+
+## Authentication with JWT
+
+```python
+from fastapi import Depends, HTTPException, status
+from fastapi.security import OAuth2PasswordBearer
+from jose import JWTError, jwt
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+
+SECRET_KEY = "your-secret-key"
+ALGORITHM = "HS256"
+
+def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id = payload.get("sub")
+        if user_id is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        return user_id
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+```
+
+---
+
+## Middleware and Background Tasks
+
+```python
+from fastapi import Request
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+@app.middleware("http")
+async def add_process_time(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    response.headers["X-Process-Time"] = str(time.time() - start)
+    return response
+```
+
+---
+
+## WebSockets
+
+```python
+from fastapi import WebSocket
+
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    while True:
+        data = await websocket.receive_text()
+        await websocket.send_text(f"Message received: {data}")
+```
+
+---
+
+## Testing FastAPI Applications
+
+```python
+from fastapi.testclient import TestClient
+
+client = TestClient(app)
+
+def test_read_root():
+    response = client.get("/")
+    assert response.status_code == 200
+    assert response.json() == {"message": "Hello World"}
+```
+
+---
+
+## Key Takeaways from Module 2
+
+* Build APIs with type-safe request and response models
+* Use dependency injection for reusable logic
+* Protect routes with JWT authentication
+* Enable CORS for frontend communication
+* Write automated tests for every endpoint
+
+---
+
+# Module 3: PostgreSQL with SQLAlchemy (2 Weeks)
+
+Relational databases are the backbone of most backend systems. PostgreSQL paired with SQLAlchemy is a powerful combination.
+
+---
+
+## Why PostgreSQL
+
+* Open source and production proven
+* ACID compliant
+* Excellent JSON and full-text search support
+* Scales well with proper indexing
+
+---
+
+## SQLAlchemy 2.0 Style
+
+```python
+from sqlalchemy import create_engine, String, Integer
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
+
+class Base(DeclarativeBase):
+    pass
+
+class User(Base):
+    __tablename__ = "users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(100))
+    email: Mapped[str] = mapped_column(String(100), unique=True)
+
+engine = create_engine("postgresql+psycopg://user:password@localhost/dbname")
+SessionLocal = sessionmaker(bind=engine)
+```
+
+---
+
+## Database Migrations with Alembic
+
+Install Alembic:
+
+```bash
+pip install alembic
+alembic init alembic
+```
+
+Create migrations after model changes:
+
+```bash
+alembic revision --autogenerate -m "create users table"
+alembic upgrade head
+```
+
+---
+
+## Relationships
+
+```python
+from sqlalchemy.orm import relationship
+from sqlalchemy import ForeignKey
+
+class Post(Base):
+    __tablename__ = "posts"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    title: Mapped[str]
+    content: Mapped[str]
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+
+    user: Mapped["User"] = relationship("User", back_populates="posts")
+
+User.posts = relationship("Post", back_populates="user")
+```
+
+---
+
+## Async SQLAlchemy
+
+```python
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+
+engine = create_async_engine("postgresql+asyncpg://user:password@localhost/dbname")
+AsyncSessionLocal = sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+async def get_db():
+    async with AsyncSessionLocal() as session:
+        yield session
+```
+
+---
+
+## Key Takeaways from Module 3
+
+* Use SQLAlchemy 2.0 mapped column syntax
+* Manage schema changes with Alembic
+* Design relationships carefully to avoid N+1 queries
+* Prefer async database drivers in FastAPI
+* Add indexes for frequently queried columns
+
+---
+
+# Module 4: Docker + Redis (1–2 Weeks)
+
+Modern backends are containerized and cached. Docker and Redis are essential tools.
+
+---
+
+## Docker Fundamentals
+
+Docker packages applications into portable containers.
+
+Core concepts:
+
+* Dockerfile: instructions to build an image
+* Image: a blueprint for containers
+* Container: a running instance of an image
+* Docker Compose: run multi-container applications
+
+---
+
+## Dockerfile for FastAPI
+
+```dockerfile
+FROM python:3.12-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+```
+
+---
+
+## Docker Compose Setup
+
+```yaml
+services:
+  api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://user:password@db/appdb
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - db
+      - redis
+
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: appdb
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+volumes:
+  pgdata:
+```
+
+---
+
+## Redis Basics
+
+Redis is an in-memory data store used for caching, sessions, queues, and real-time features.
+
+```python
+import redis
+
+r = redis.Redis(host="localhost", port=6379, decode_responses=True)
+
+r.set("user:1", "Durgesh")
+print(r.get("user:1"))
+
+r.expire("user:1", 300)
+```
+
+---
+
+## Caching in FastAPI
+
+```python
+from fastapi import FastAPI
+import redis
+import json
+
+app = FastAPI()
+cache = redis.Redis(host="redis", port=6379, decode_responses=True)
+
+@app.get("/data")
+def get_data():
+    cached = cache.get("data")
+    if cached:
+        return json.loads(cached)
+
+    result = expensive_query()
+    cache.setex("data", 60, json.dumps(result))
+    return result
+```
+
+---
+
+## Rate Limiting
+
+```python
+from fastapi import Request, HTTPException
+
+def rate_limit(request: Request, max_requests: int = 10, window: int = 60):
+    client_ip = request.client.host
+    key = f"rate:{client_ip}"
+    current = cache.incr(key)
+
+    if current == 1:
+        cache.expire(key, window)
+
+    if current > max_requests:
+        raise HTTPException(status_code=429, detail="Too many requests")
+```
+
+---
+
+## Celery with Redis
+
+Celery runs background tasks using Redis as a message broker.
+
+```python
+from celery import Celery
+
+celery_app = Celery("tasks", broker="redis://redis:6379/0")
+
+@celery_app.task
+def send_email_task(email: str):
+    # send email logic
+    return f"Email sent to {email}"
+```
+
+Call the task:
+
+```python
+send_email_task.delay("user@example.com")
+```
+
+---
+
+## Key Takeaways from Module 4
+
+* Containerize every application with Docker
+* Use Docker Compose for local development
+* Cache expensive operations with Redis
+* Implement rate limiting to protect APIs
+* Use Celery for background job processing
+
+---
+
+# Module 5: OpenAI, Gemini, and Anthropic APIs (2 Weeks)
+
+Large language models open entirely new categories of applications. Learn how to work with the leading providers.
+
+---
+
+## API Keys and Setup
+
+Store keys in environment variables, never in code.
+
+```bash
+export OPENAI_API_KEY=sk-...
+export GEMINI_API_KEY=...
+export ANTHROPIC_API_KEY=sk-ant-...
+```
+
+---
+
+## OpenAI SDK
+
+```python
+from openai import OpenAI
+import os
+
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+response = client.chat.completions.create(
+    model="gpt-4o-mini",
+    messages=[
+        {"role": "system", "content": "You are a helpful assistant."},
+        {"role": "user", "content": "Explain FastAPI in one paragraph."}
+    ]
+)
+
+print(response.choices[0].message.content)
+```
+
+---
+
+## Gemini SDK
+
+```python
+import google.generativeai as genai
+import os
+
+genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+
+model = genai.GenerativeModel("gemini-1.5-flash")
+response = model.generate_content("Explain SQLAlchemy in simple terms.")
+
+print(response.text)
+```
+
+---
+
+## Anthropic SDK
+
+```python
+from anthropic import Anthropic
+import os
+
+client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+response = client.messages.create(
+    model="claude-3-5-sonnet-20241022",
+    max_tokens=500,
+    messages=[
+        {"role": "user", "content": "What is Retrieval-Augmented Generation?"}
+    ]
+)
+
+print(response.content[0].text)
+```
+
+---
+
+## Unified Provider Interface
+
+Build an abstraction so you can swap providers easily.
+
+```python
+from abc import ABC, abstractmethod
+
+class LLMProvider(ABC):
+    @abstractmethod
+    def chat(self, prompt: str) -> str:
+        pass
+
+class OpenAIProvider(LLMProvider):
+    def __init__(self):
+        self.client = OpenAI()
+
+    def chat(self, prompt: str) -> str:
+        response = self.client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}]
+        )
+        return response.choices[0].message.content
+```
+
+---
+
+## Prompt Engineering Basics
+
+* Be specific and clear
+* Provide examples in few-shot prompts
+* Use system messages to set behavior
+* Break complex tasks into steps
+* Validate outputs before using them
+
+```python
+messages = [
+    {"role": "system", "content": "You are a senior backend engineer."},
+    {"role": "user", "content": "Review this code for security issues: ..."}
+]
+```
+
+---
+
+## Key Takeaways from Module 5
+
+* Keep API keys secure and rotate them regularly
+* Build provider abstractions for flexibility
+* Experiment with different models for different tasks
+* Use structured prompts to control model behavior
+* Always validate and sanitize model outputs
+
+---
+
+# Module 6: LangChain + LangGraph + RAG (3–4 Weeks)
+
+This module connects Python backends to the agentic AI ecosystem.
+
+---
+
+## Why LangChain
+
+LangChain simplifies building applications with LLMs by providing:
+
+* Chains for combining prompts and models
+* Tools for connecting models to external systems
+* Memory for conversational context
+* Vector store integrations
+
+---
+
+## Basic LangChain Chain
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import ChatPromptTemplate
+
+model = ChatOpenAI(model="gpt-4o-mini")
+
+prompt = ChatPromptTemplate.from_messages([
+    ("system", "You are a helpful coding assistant."),
+    ("user", "Explain {topic} in Python.")
+])
+
+chain = prompt | model
+
+response = chain.invoke({"topic": "decorators"})
+print(response.content)
+```
+
+---
+
+## Tools and Agents
+
+```python
+from langchain.tools import tool
+from langchain.agents import create_tool_calling_agent, AgentExecutor
+
+@tool
+def multiply(a: int, b: int) -> int:
+    """Multiply two numbers."""
+    return a * b
+
+tools = [multiply]
+
+agent = create_tool_calling_agent(model, tools, prompt)
+executor = AgentExecutor(agent=agent, tools=tools, verbose=True)
+
+executor.invoke({"input": "What is 7 times 8?"})
+```
+
+---
+
+## RAG Pipeline
+
+RAG retrieves relevant documents before generating answers.
+
+```text
+Documents → Split → Embed → Store in Vector DB → Retrieve → Generate Answer
+```
+
+```python
+from langchain_community.document_loaders import TextLoader
+from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_openai import OpenAIEmbeddings
+from langchain_chroma import Chroma
+
+loader = TextLoader("docs.txt")
+docs = loader.load()
+
+splitter = RecursiveCharacterTextSplitter(chunk_size=500, chunk_overlap=50)
+chunks = splitter.split_documents(docs)
+
+embeddings = OpenAIEmbeddings()
+vector_store = Chroma.from_documents(chunks, embeddings)
+
+retriever = vector_store.as_retriever()
+retrieved = retriever.invoke("What is FastAPI?")
+```
+
+---
+
+## Building a RAG Chain
+
+```python
+from langchain.chains import create_retrieval_chain
+from langchain.chains.combine_documents import create_stuff_documents_chain
+
+qa_prompt = ChatPromptTemplate.from_template("""
+Use the following context to answer the question.
+Context: {context}
+Question: {input}
+Answer:
+""")
+
+docs_chain = create_stuff_documents_chain(model, qa_prompt)
+rag_chain = create_retrieval_chain(retriever, docs_chain)
+
+result = rag_chain.invoke({"input": "What is FastAPI?"})
+print(result["answer"])
+```
+
+---
+
+## LangGraph
+
+LangGraph helps build stateful, multi-step agent workflows.
+
+```python
+from langgraph.graph import StateGraph, END
+from typing import TypedDict
+
+class AgentState(TypedDict):
+    input: str
+    output: str
+
+def retrieve(state: AgentState):
+    return {"output": f"Retrieved context for: {state['input']}"}
+
+def generate(state: AgentState):
+    return {"output": f"Generated answer for: {state['input']}"}
+
+builder = StateGraph(AgentState)
+builder.add_node("retrieve", retrieve)
+builder.add_node("generate", generate)
+builder.set_entry_point("retrieve")
+builder.add_edge("retrieve", "generate")
+builder.add_edge("generate", END)
+
+graph = builder.compile()
+result = graph.invoke({"input": "What is RAG?"})
+print(result["output"])
+```
+
+---
+
+## Vector Store Options
+
+| Store | Best For |
+|---|---|
+| Chroma | Local development and small projects |
+| PGVector | When you already use PostgreSQL |
+| Pinecone | Production-scale vector search |
+| Weaviate | Semantic search applications |
+| Qdrant | Open source, high performance |
+
+---
+
+## Key Takeaways from Module 6
+
+* Use LangChain to connect LLMs, prompts, and tools
+* Build RAG systems to ground answers in your own data
+* Split documents carefully for better retrieval
+* Use LangGraph for multi-step agent workflows
+* Choose vector stores based on project scale
+
+---
+
+# Security Best Practices
+
+Security must be part of every module, not an afterthought.
+
+---
+
+## Environment and Secrets
+
+* Never commit secrets to Git
+* Use `.env` files with python-dotenv
+* Rotate API keys regularly
+* Use Docker secrets or a vault in production
+
+---
+
+## Input Validation
+
+```python
+from pydantic import BaseModel, Field
+
+class CreateUser(BaseModel):
+    name: str = Field(..., min_length=2, max_length=100)
+    email: EmailStr
+```
+
+Always validate and sanitize user input.
+
+---
+
+## Authentication and Authorization
+
+* Use HTTPS everywhere in production
+* Issue short-lived JWT access tokens
+* Store refresh tokens securely
+* Implement role-based access control
+* Hash passwords with bcrypt or Argon2
+
+---
+
+## SQL Injection Prevention
+
+SQLAlchemy ORM protects against most SQL injection. Never concatenate user input into raw SQL.
+
+---
+
+## Dependency and Supply Chain Security
+
+```bash
+pip install safety
+safety check
+```
+
+Keep dependencies updated and audit new packages.
+
+---
+
+## Rate Limiting and Logging
+
+* Rate limit public endpoints
+* Log important events without exposing sensitive data
+* Monitor for unusual traffic patterns
+
+---
+
+# Top Python Libraries to Know
+
+| Category | Library |
+|---|---|
+| Web framework | FastAPI, Flask, Django |
+| ORM | SQLAlchemy, SQLModel |
+| Migrations | Alembic |
+| Database drivers | psycopg, asyncpg, sqlite3 |
+| Validation | Pydantic |
+| Testing | pytest, httpx |
+| Async HTTP | httpx, aiohttp |
+| Task queues | Celery, RQ, arq |
+| Caching | redis-py |
+| Environment | python-dotenv |
+| AI/LLM | openai, anthropic, google-generativeai |
+| LLM framework | LangChain, LangGraph |
+| Vector DB | chromadb, pgvector, qdrant-client |
+| Observability | structlog, sentry-sdk, prometheus-client |
+
+---
+
+# Capstone Project: AI-Powered Backend API
+
+Combine everything into one project.
+
+## Features
+
+* FastAPI backend with PostgreSQL
+* User authentication with JWT
+* Docker and Docker Compose setup
+* Redis caching and Celery background tasks
+* File upload endpoint that stores documents
+* RAG pipeline using LangChain and Chroma
+* Chat endpoint that answers questions from uploaded documents
+* Support for OpenAI, Gemini, and Anthropic as LLM providers
+
+## Suggested Structure
+
+```text
+ai_backend/
+├── app/
+│   ├── __init__.py
+│   ├── main.py
+│   ├── config.py
+│   ├── models.py
+│   ├── schemas.py
+│   ├── auth.py
+│   ├── dependencies.py
+│   ├── routers/
+│   │   ├── __init__.py
+│   │   ├── users.py
+│   │   ├── documents.py
+│   │   └── chat.py
+│   ├── services/
+│   │   ├── llm.py
+│   │   ├── rag.py
+│   │   └── cache.py
+│   └── tasks.py
+├── alembic/
+├── tests/
+├── Dockerfile
+├── docker-compose.yml
+├── requirements.txt
+└── .env
+```
+
+This project gives you something concrete to demonstrate in interviews.
+
+---
+
+# Learning Tips
+
+* Build projects, not just tutorials
+* Read official documentation alongside guides
+* Write tests from day one
+* Deploy early and often
+* Contribute to open source when possible
+* Keep a GitHub portfolio of your projects
+
+---
+
+# Conclusion
+
+Python is a gateway to both backend engineering and AI engineering. This roadmap takes you from language fundamentals to production-ready systems and modern LLM-powered applications.
+
+The skills covered here are in high demand:
+
+* Building APIs with FastAPI
+* Designing databases with PostgreSQL and SQLAlchemy
+* Deploying with Docker and scaling with Redis
+* Integrating OpenAI, Gemini, and Anthropic models
+* Building intelligent systems with LangChain, LangGraph, and RAG
+
+Start with Module 1, be consistent, and build something real at every stage. By the end of this roadmap, you will not just know Python. You will be able to ship production backend and AI applications.
